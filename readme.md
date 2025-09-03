@@ -5,9 +5,13 @@
 <hr style="border:2px solid gray">
 
 <p align="center">
-Authors:
-<li><a href="https://www.linkedin.com/in/bldevries/" target="_blank">BL de Vries</a>. PhD and Scientific visualisation advisor at <a href="https://www.surf.nl" target="_blank">SURF</a>.
-<li> [Eva Laplace](https://evalaplace.github.io/tools/tulips/), Professor in astrophysics at KU Leuven and the University of Amsterdam
+Authors:<br>
+<a href="https://evalaplace.github.io/tools/tulips/" target="_blank">Eva Laplace</a>
+Professor in astrophysics at KU Leuven and the University of Amsterdam.
+Wrote the original tulips visualisation software.
+<a href="https://www.linkedin.com/in/bldevries/" target="_blank">BL de Vries</a>
+PhD, Astrophysicist, Graphics Engineer at <a href="https://www.surf.nl" target="_blank">SURF</a>.
+Programmer of the Blender addon.
 </p>
 
 
