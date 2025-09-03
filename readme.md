@@ -8,7 +8,7 @@
 <a href="https://evalaplace.github.io/tools/tulips/" target="_blank">Eva Laplace</a>
 
 Professor in astrophysics at KU Leuven and the University of Amsterdam.
-Auther of the original [Tulips](https://evalaplace.github.io/tools/tulips/) visualisation software.
+Author of the original [Tulips](https://evalaplace.github.io/tools/tulips/) visualisation software.
 
 <a href="https://www.linkedin.com/in/bldevries/" target="_blank">BL de Vries</a>
 
