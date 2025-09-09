@@ -7,7 +7,7 @@
 ## Authors
 <a href="https://evalaplace.github.io/tools/tulips/" target="_blank">Eva Laplace</a>
 
-Professor in astrophysics at KU Leuven and the University of Amsterdam.
+Professor in astrophysics at KU Leuven and Veni fellow at the University of Amsterdam.
 Author of the original [Tulips](https://evalaplace.github.io/tools/tulips/) visualisation software.
 
 <a href="https://www.linkedin.com/in/bldevries/" target="_blank">BL de Vries</a>
@@ -16,4 +16,4 @@ PhD in astrophysics & Graphics Engineer at <a href="https://www.surf.nl" target=
 Programmer of the Tulips3D Blender addon.
 
 ## Introduction
-Tulips3D, build upon [Tulips](https://evalaplace.github.io/tools/tulips/), is a Blender addon that visualizes stellar evolution in 3D.
+Tulips3D, built upon [Tulips](https://evalaplace.github.io/tools/tulips/), is a Blender addon that visualizes stellar evolution in 3D.
