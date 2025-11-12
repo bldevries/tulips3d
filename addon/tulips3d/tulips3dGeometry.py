@@ -13,19 +13,19 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize, LogNorm
 from scipy.interpolate import interp1d
 
-def make_star_pie(settings, verbose_timing=False):#, \
+def make_star_pie(ob_name, nr_R, nr_Th, verbose_timing=False):#, \settings, 
                   # material_name = 'mat_vertex_colors'):
-    ob_name = settings.ob_name
+    # ob_name = settings.ob_name
     mesh_name = "mesh_"+ob_name
     material_name="mat_"+ob_name
 
     R_mesh = 10.
-    nr_R = settings.mesh_r_nr_steps #50.
+    # nr_R = settings.mesh_r_nr_steps #50.
     R_step = 10./nr_R
     R = np.arange(0., R_mesh, R_step) # Excludes R_mesh
 
     Th_max = np.pi
-    nr_Th = settings.mesh_th_nr_steps #10
+    # nr_Th = settings.mesh_th_nr_steps #10
     Th_step = Th_max/nr_Th
     Th = np.arange(0., Th_max+Th_step, Th_step) # Includes Th_max
     # Th = np.array([0+i/100*np.pi for i in range(101)])
