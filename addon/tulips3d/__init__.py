@@ -44,6 +44,12 @@ bl_info = {
     "category": "Object",
 }
 
+# Global Keys
+key_tulips_data = 'tulips_grid_data'
+key_active_profile_key = 'tulips_active_profile_key'
+active_time_index = 'active_time_index'
+
+
 # ######################################################
 # CREATING AND LOOP FUNCTIONs
 # ######################################################
@@ -67,27 +73,27 @@ class OBJECT_OT_add_tulips3d_geo(bpy.types.Operator):
     def execute(self, context):
         settings = context.scene.Tulips3DSettingsUI # We pull the current settings from context.scene.simple_geo_settings.
 
-        print(settings.file_path_data1d)
-        print(DP.load_Data1D_from_pickle(settings.file_path_data1d))
-
+        # Create the geometry of the 3d pie slice
         ob = tulips3dGeometry.make_star_pie(\
             ob_name=settings.ob_name, \
             nr_R=settings.mesh_r_nr_steps, \
             nr_Th=settings.mesh_th_nr_steps, \
             verbose_timing=True)
 
+        # Load the mesa data
         d = DP.load_Data1D_from_pickle(settings.file_path_data1d)
-        ob['Data1D'] = {'data': {\
-            "energy":d.getProperty('energy'),\
-            "logT": d.getProperty('logT'),\
-            } }
 
-        #if settings.type == 'ENERGY':
-        #    tulips3dData.prepare_energy_data(settings, verbose_timing=True)
+        # Create a dict as a custom property on the object to hold the arrays
+        ob[key_tulips_data] = {}
+        ob[key_active_profile_key] = d.getGridPropertyLabels()[0]
+        ob[active_time_index] = int(0)
 
-        #else:
-        #    self.report({'ERROR'}, f"Unknown shape {settings.shape}")
-        #    return {'CANCELLED'}
+        for k in d.getGridPropertyLabels():
+            ob[key_tulips_data].update({k:d.getProperty(k)})
+        
+        update_profile(ob)
+
+        print("Data avaliable: ", d.getGridPropertyLabels(), list(ob[key_tulips_data].keys()))
 
         return {'FINISHED'}
 
@@ -194,28 +200,52 @@ class VIEW3D_PT_tulips3d_panel(bpy.types.Panel):
 
 
 
+# This is called when the user selects a blender object 
+# and it updates which enum options are available in the
+# sidebar
 def mesaDataProfEnum_callback(scene, context):
-    items = [
-        # ('LOC', "Location", ""),
-        # ('ROT', "Rotation", ""),
-        # ('SCL', "Scale", ""),
-    ]
-
+    print("SELECTING!!!!!!", bpy.context.selected_objects)
+        # context.scene.Tulips3DSettingsUI_sidebar.mesaDataProfEnum, \
+        # type(context.scene.Tulips3DSettingsUI_sidebar.mesaDataProfEnum))
+    items = []
     # get selection
     selection = bpy.context.selected_objects
     if len(selection) == 1:
-
-        # check for lamps
-        if 'Data1D' in bpy.context.selected_objects[0].keys():
-        # if selection[0]['Data1D'] == 'LAMP':
-            for k in bpy.context.selected_objects[0]['Data1D']['data'].keys():
+        ob = bpy.context.selected_objects[0]
+        # Check if the object has mesa profile data attached
+        if key_tulips_data in ob.keys():
+            for k in ob[key_tulips_data].keys():
                 items.append((k, k, ""))
-            # items.append(('COL', "Color", ""))
 
+        # Set the enum to the current active data
+        # context.scene.Tulips3DSettingsUI_sidebar.mesaDataProfEnum = ob[key_active_profile_key]
     return items
 
+# This is called when the user selects a mesa profile in the sidebar
+# and this should this update the geometry
 def mesaDataProfEnum_update(scene, context):
-    print("Need to do things when user selects other data profile")
+    selected_profile = context.object.mesaProfileEnum#context.scene.Tulips3DSettingsUI_sidebar.mesaDataProfEnum
+    print(selected_profile)
+    selected_time_index = 0.
+
+    selected = context.selected_objects
+    if len(selected) == 1:
+        ob = selected[0]
+        if  selected_profile != ob[key_active_profile_key] or \
+            selected_time_index != ob[active_time_index]:
+
+            ob[key_active_profile_key] = selected_profile
+            ob[active_time_index] = int(0)
+            
+            update_profile(ob)
+        print("mesaDataProfEnum_update: STILL NEED TO USE TIME INDEX!!")
+
+
+def update_profile(ob):
+    print("Update", ob[key_active_profile_key], ob[active_time_index])
+    r, v = ob[key_tulips_data][ob[key_active_profile_key]][ob[active_time_index]]
+    tulips3dGeometry.make_vertex_colors(np.array(r), np.array(v), ob.name)
+
 
 def obname_callback(scene, context):
     selection = bpy.context.selected_objects
@@ -235,14 +265,14 @@ def update_obname(self, context):
         if len(selection)>0:
             self.ob_name = selection[0].name
 
-class Tulips3DSettingsUI_sidebar(bpy.types.PropertyGroup):
-    """Container for UI‑exposed settings"""
-    mesaDataProfEnum : EnumProperty(
-        name="MESA data profiles",
-        description="",
-        items=mesaDataProfEnum_callback,
-        update=mesaDataProfEnum_update
-        )
+# class Tulips3DSettingsUI_sidebar(bpy.types.PropertyGroup):
+#     """Container for UI‑exposed settings"""
+#     mesaDataProfEnum : EnumProperty(
+#         name="MESA data profiles",
+#         description="",
+#         items=mesaDataProfEnum_callback,
+#         update=mesaDataProfEnum_update
+#         )
 
     
 
@@ -258,12 +288,22 @@ class SIDEBAR_PT_tulips3d_panel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        settings = context.scene.Tulips3DSettingsUI_sidebar
+        # settings = context.scene.Tulips3DSettingsUI_sidebar
+
+        if len(bpy.context.selected_objects) > 0:
+            ob = bpy.context.selected_objects[0]
 
         col = layout.column()
-        # col.label(text = "hoihoi")
+        col.label(text = "Object: "+str(ob.name))
+        # col.label(text = "Active profile: "+ob[key_active_profile_key])
+
         # col.prop(settings, "ob_name")
-        col.prop(settings, "mesaDataProfEnum")
+        # col.prop(settings, "mesaDataProfEnum")
+        col.separator(factor=1.0, type='LINE')
+        col.label(text = "MESA Profile: ")
+        col.prop(context.object, "mesaProfileEnum")
+
+        
         # # col.prop(settings, "ani_type")
         # # if settings.ani_type == "STILL":
         # col.prop(settings, "type")
@@ -292,7 +332,7 @@ class StellarEvolutionProperties(bpy.types.PropertyGroup): #FloatItem
 # ######################################################
 classes = (
     Tulips3DSettingsUI,
-    Tulips3DSettingsUI_sidebar,
+    # Tulips3DSettingsUI_sidebar,
     OBJECT_OT_add_tulips3d_geo,
     VIEW3D_PT_tulips3d_panel,
     SIDEBAR_PT_tulips3d_panel,
@@ -305,7 +345,14 @@ def register():
 
     # Attach the PropertyGroup to the scene
     bpy.types.Scene.Tulips3DSettingsUI = bpy.props.PointerProperty(type=Tulips3DSettingsUI)
-    bpy.types.Scene.Tulips3DSettingsUI_sidebar = bpy.props.PointerProperty(type=Tulips3DSettingsUI_sidebar)
+    # bpy.types.Scene.Tulips3DSettingsUI_sidebar = bpy.props.PointerProperty(type=Tulips3DSettingsUI_sidebar)
+
+    # The enum needs to be linked to the object (not scene), to update propertly
+    # https://harlepengren.com/how-to-make-a-dynamic-dropdown-in-blender-python/
+    bpy.types.Object.mesaProfileEnum = bpy.props.EnumProperty(name="",description="a dynamic list",\
+        items=mesaDataProfEnum_callback,\
+        update=mesaDataProfEnum_update)
+
 
     # Attach an empty CollectionProperty to every Object
     bpy.types.Object.stellarProperties = CollectionProperty(
@@ -320,7 +367,7 @@ def register():
 def unregister():
     # Remove the property first
     del bpy.types.Scene.Tulips3DSettingsUI
-    del bpy.types.Scene.Tulips3DSettingsUI_sidebar
+    # del bpy.types.Scene.Tulips3DSettingsUI_sidebar
     del bpy.types.Object.stellarProperties
 
     for cls in reversed(classes):

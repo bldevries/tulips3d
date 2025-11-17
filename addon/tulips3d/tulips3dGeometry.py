@@ -13,6 +13,9 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize, LogNorm
 from scipy.interpolate import interp1d
 
+# N?EED TO PULL THIS OUT!
+import mesaPlot as mp
+
 def make_star_pie(ob_name, nr_R, nr_Th, verbose_timing=False):#, \settings, 
                   # material_name = 'mat_vertex_colors'):
     # ob_name = settings.ob_name
@@ -146,9 +149,10 @@ def make_star_pie(ob_name, nr_R, nr_Th, verbose_timing=False):#, \settings,
     return ob
 
 # def make_vertex_colors(data_values, ob_name, vertex_colors_name_base):
-def make_vertex_colors(r, v, settings, vertex_colors_name_base="test_v_colors"):
+# def make_vertex_colors(r, v, settings, vertex_colors_name_base="test_v_colors"):
+def make_vertex_colors(r, v, ob_name, vertex_colors_name_base="test_v_colors"):
 
-    ob = bpy.data.objects[settings.ob_name]
+    ob = bpy.data.objects[ob_name]
     mesh = ob.data
 
     # for i, _ in enumerate(data_values):
