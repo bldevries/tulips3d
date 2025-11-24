@@ -101,14 +101,20 @@ class OBJECT_OT_add_tulips3d_geo(bpy.types.Operator):
 # HANDLERS
 # ######################################################
 def frame_change(scene):
-    settings = bpy.context.scene.Tulips3DSettingsUI
 
-    obj = bpy.data.objects[settings.ob_name]#.scale = (s, s, s)
-    bpy.ops.object.select_all(action='DESELECT')
-    obj.select_set(True)
-    modul = int(scene.frame_current/len(obj.stellarProperties))
-    start_ind = obj.stellarProperties[scene.frame_current-modul*len(obj.stellarProperties)].T_index
-    bpy.ops.geometry.color_attribute_render_set(name="energy_ver_col_"+str(int(start_ind)))
+    for ob in bpy.data.objects:
+        if key_tulips_data in list(ob.keys()):
+            ob[active_time_index] = scene.frame_current*ob.mesaAniStep
+            ob.mesaProfileTime = ob[active_time_index]
+            update_profile(ob)
+    # settings = bpy.context.scene.Tulips3DSettingsUI
+
+    # obj = bpy.data.objects[settings.ob_name]#.scale = (s, s, s)
+    # bpy.ops.object.select_all(action='DESELECT')
+    # obj.select_set(True)
+    # modul = int(scene.frame_current/len(obj.stellarProperties))
+    # start_ind = obj.stellarProperties[scene.frame_current-modul*len(obj.stellarProperties)].T_index
+    # bpy.ops.geometry.color_attribute_render_set(name="energy_ver_col_"+str(int(start_ind)))
 
 
 
@@ -224,22 +230,28 @@ def mesaDataProfEnum_callback(scene, context):
 # This is called when the user selects a mesa profile in the sidebar
 # and this should this update the geometry
 def mesaDataProfEnum_update(scene, context):
-    selected_profile = context.object.mesaProfileEnum#context.scene.Tulips3DSettingsUI_sidebar.mesaDataProfEnum
-    print(selected_profile)
-    selected_time_index = 0.
-
+    selected_profile = context.object.mesaProfileEnum
     selected = context.selected_objects
     if len(selected) == 1:
         ob = selected[0]
-        if  selected_profile != ob[key_active_profile_key] or \
-            selected_time_index != ob[active_time_index]:
-
+        if  selected_profile != ob[key_active_profile_key]:
             ob[key_active_profile_key] = selected_profile
-            ob[active_time_index] = int(0)
-            
             update_profile(ob)
         print("mesaDataProfEnum_update: STILL NEED TO USE TIME INDEX!!")
 
+def mesaDataProfTime_update(scene, context):
+    selected_time_index = context.object.mesaProfileTime
+    selected = context.selected_objects
+    if len(selected) == 1:
+        ob = selected[0]
+        if  selected_time_index != ob[active_time_index]:
+            if selected_time_index <= len(ob[key_tulips_data][ob[key_active_profile_key]]):
+                ob[active_time_index] = selected_time_index
+            else:
+                ob[active_time_index] = len(ob[key_tulips_data][ob[key_active_profile_key]])-1
+                context.object.mesaProfileTime = ob[active_time_index]
+            update_profile(ob)
+    print("Time Update")
 
 def update_profile(ob):
     print("Update", ob[key_active_profile_key], ob[active_time_index])
@@ -278,23 +290,25 @@ def update_obname(self, context):
 
 class SIDEBAR_PT_tulips3d_panel(bpy.types.Panel):
     """Panel placed in the Properties editor → Scene tab"""
-    bl_label = "SIDEBAR_PT_tulips3d_panel"
+    bl_label = "Tulips3D Sidebar"
     bl_idname = "SIDEBAR_PT_tulips3d_panel"
     # bl_space_type = "PROPERTIES"
     # bl_region_type = "WINDOW"
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
+    bl_category = "Tulips3D"
     # bl_context = "scene"          # appears under the Scene tab
 
     def draw(self, context):
         layout = self.layout
         # settings = context.scene.Tulips3DSettingsUI_sidebar
 
+        col = layout.column()
         if len(bpy.context.selected_objects) > 0:
             ob = bpy.context.selected_objects[0]
-
-        col = layout.column()
-        col.label(text = "Object: "+str(ob.name))
+            col.label(text = "Object: "+str(ob.name))
+        else:
+            col.label(text = "Object: ")
         # col.label(text = "Active profile: "+ob[key_active_profile_key])
 
         # col.prop(settings, "ob_name")
@@ -303,6 +317,11 @@ class SIDEBAR_PT_tulips3d_panel(bpy.types.Panel):
         col.label(text = "MESA Profile: ")
         col.prop(context.object, "mesaProfileEnum")
 
+        col.separator(factor=1.0, type='LINE')
+        col.label(text = "MESA time index: ")
+        col.prop(context.object, "mesaProfileTime")
+        col.label(text = "Animation index step/frame: ")
+        col.prop(context.object, "mesaAniStep")
         
         # # col.prop(settings, "ani_type")
         # # if settings.ani_type == "STILL":
@@ -353,6 +372,11 @@ def register():
         items=mesaDataProfEnum_callback,\
         update=mesaDataProfEnum_update)
 
+    bpy.types.Object.mesaProfileTime = bpy.props.IntProperty(name="", step=1, default=0, min=0, description="int time index",\
+        update=mesaDataProfTime_update)
+
+    bpy.types.Object.mesaAniStep = bpy.props.IntProperty(name="", step=1, default=100, min=0, max=1500, description="time_index step per frame",\
+        update=mesaDataProfTime_update)
 
     # Attach an empty CollectionProperty to every Object
     bpy.types.Object.stellarProperties = CollectionProperty(
