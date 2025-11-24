@@ -7,18 +7,18 @@ Go to www.blender.org and download and install  Blender (4.5+)
 Clone or download our repositatory: https://github.com/bldevries/DataPrepTulips3D
 
 The Blender Python executable can be found in the Blender install. For example on Mac it could be found here, depending on where you installed Blender:
-/Applications/Blender.app/Contents/Resources/5.0/python/bin/python3.11
+'''/Applications/Blender.app/Contents/Resources/5.0/python/bin/python3.11'''
 
 Now you can install DataPrepTulips3D for Blender using:
-/Applications/Blender.app/Contents/Resources/5.0/python/bin/python3.11 -m pip install -e <..>/DataPrepTulips3D/.
+'''/Applications/Blender.app/Contents/Resources/5.0/python/bin/python3.11 -m pip install -e <..>/DataPrepTulips3D/.'''
 
 ## Install mesaPlot for Blender:
 This is a bit quicker, you can just run:
-/Applications/Blender.app/Contents/Resources/5.0/python/bin/python3.11 -m pip install mesaPlot
+'''/Applications/Blender.app/Contents/Resources/5.0/python/bin/python3.11 -m pip install mesaPlot'''
 
 ## Start Blender from the command-line (optional and Mac only):
 Now start Blender in a terminal:
-/Applications/Blender.app/Contents/MacOS/Blender
+'''/Applications/Blender.app/Contents/MacOS/Blender'''
 
 ## Install the Tulips3D addon
 Download the zipped addon: https://github.com/bldevries/tulips3d/blob/main/addon/tulips3d.zip
@@ -47,6 +47,7 @@ The frames in the animation are linked to the time index of the mesa profiles. S
 ## Creating your own DataPrepTulips3D file
 You probably want to install DataPrepTulips3D in a virtual env. You can then run the following commands to generate a pickly file based on your own mesa files:
 
+'''
 import DataPrepTulips3D as DP
 d = DP.loadMesaData(mesa_LOGS_directory = "<..>/Profiles/LOGS1", \
                     filename_history = "history1.data",\
@@ -54,6 +55,7 @@ d = DP.loadMesaData(mesa_LOGS_directory = "<..>/Profiles/LOGS1", \
 d.print_summary()
 d.reduceResolutionRadialData(max_nr_points=100)
 DP.save_Data1D_to_pickle(d, "<..>/binary.pkl")
+'''
 
 Now you can try this out in Blender :)
 
