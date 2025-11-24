@@ -28,6 +28,10 @@ Find the downward arrow in the top right of the window, click it and choose "Ins
 Search for the downloaded zip file and choose it.
 Now Tulips3D is shown in the list and check if it is selected properly
 
+<div align="center">
+<img src="BlenderUI.png" alt="" width="720" height="auto">
+</div>
+
 ## Where to find Tulips3D in the Blender UI
 The data loading UI can be found in the "Scene" tab in the "Properties" window. This window is usually found in the right part of the UI and it has many small tabs of which one is the Scene tab. There you can find a "Tulips3D" dropdown menu.
 
