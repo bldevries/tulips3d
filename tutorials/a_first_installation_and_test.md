@@ -4,7 +4,7 @@
 Go to www.blender.org and download and install  Blender (4.5+)
 
 ## Install DataPrepTulips3D in Blender
-Clone or download our repositatory: https://github.com/bldevries/DataPrepTulips3D
+Clone or download our repository: https://github.com/bldevries/DataPrepTulips3D
 
 The Blender Python executable can be found in the Blender install. For example on Mac it could be found here, depending on where you installed Blender:
 ```/Applications/Blender.app/Contents/Resources/5.0/python/bin/python3.11```
@@ -38,14 +38,14 @@ To manipulate the selected star object, there is a sidebar UI. You can make this
 Here is an example file I made:
 https://www.dropbox.com/scl/fi/lqpgvdv587pxqd5ug7wyk/binary.pkl?rlkey=yxz9xvhdke126ab9lgd3ci49a&st=o1h3sa3g&dl=0
 
-Now you can go into Blender, go to the Properties window and the Scene tab and find the Tulips3D section of the UI. Press the file Icon to find and select the "binary.pkl" you just downloaded. The click "Create Tulips3D Object" to make an object. It should appear in your 3D View. To see some colors you might need to set Viewport Shading to Rendered. You typically do this by selecting this render mode in the top right of the 3D Viewport. It is one of the small icons of a ball. 
+Now you can go into Blender, go to the Properties window and the Scene tab and find the Tulips3D section of the UI. Press the file Icon to find and select the "binary.pkl" you just downloaded. The click "Create Tulips3D Object" to make an object. It should appear in your 3D View. To see some colours you might need to set Viewport Shading to Rendered. You typically do this by selecting this render mode in the top right of the 3D Viewport. It is one of the small icons of a ball. 
 
 Now you can play with some of the data using the sidebar. If the object is selected you can choose between different MESA Profiles. You can also set the time index to select different times. 
 
 The frames in the animation are linked to the time index of the mesa profiles. So when you select a different frame in the Timeline (often visible below the 3D Viewport), the model should update to a different time index. This is all still very slow and might occasionally crash Blender, so take care :) In the sidebar you can choose how the frame number is mapped to the time index.
 
 ## Creating your own DataPrepTulips3D file
-You probably want to install DataPrepTulips3D in a virtual env. You can then run the following commands to generate a pickly file based on your own mesa files:
+You probably want to install DataPrepTulips3D in a virtual env. You can then run the following commands to generate a pickle file based on your own mesa files:
 
 ```python
 import DataPrepTulips3D as DP
