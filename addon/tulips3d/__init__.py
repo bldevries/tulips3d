@@ -44,10 +44,20 @@ bl_info = {
     "category": "Object",
 }
 
-# Global Keys
-key_tulips_data = 'tulips_grid_data'
-key_active_profile_key = 'tulips_active_profile_key'
-active_time_index = 'active_time_index'
+# OBJECT KEYS TO TRACK
+key_ob_DataPrepTulips3D_data = 'tulips_grid_data' # This holds the DataPrepTulips3D dict
+key_ob_active_data_label = 'tulips_active_profile_key' # Label of the currently shown data 
+key_ob_active_time_index = 'active_time_index' # Currently shown time index
+
+key_blender_ob_data_dict = "MESA_data_dict"
+
+
+# Keys of the dict coming from the DataPrepTulips3D
+key_DataPrepTulips3D_prof_labels = "prof_labels"
+key_DataPrepTulips3D_r_resolution = "r_resolution"
+key_DataPrepTulips3D_t_resolution = "t_resolution"
+key_DataPrepTulips3D_data_prof_t_r = "data_prof_t_r"
+key_DataPrepTulips3D_data_r_max = "data_r_max"
 
 
 # ######################################################
@@ -73,48 +83,93 @@ class OBJECT_OT_add_tulips3d_geo(bpy.types.Operator):
     def execute(self, context):
         settings = context.scene.Tulips3DSettingsUI # We pull the current settings from context.scene.simple_geo_settings.
 
+        # Load the mesa data
+        d = DP.load_from_pickle(settings.file_path_data1d)
+        print("MESA data keys avaliable: ", d.keys())
+        print("MESA data profiles avaliable: ", d[key_DataPrepTulips3D_prof_labels])
+
         # Create the geometry of the 3d pie slice
         ob = tulips3dGeometry.make_star_pie(\
             ob_name=settings.ob_name, \
-            nr_R=settings.mesh_r_nr_steps, \
+            nr_R=d[key_DataPrepTulips3D_r_resolution], \
+            # nr_R=settings.mesh_r_nr_steps, \
             nr_Th=settings.mesh_th_nr_steps, \
             verbose_timing=True)
 
-        # Load the mesa data
-        d = DP.load_Data1D_from_pickle(settings.file_path_data1d)
+        # Store all the dict data onto the Blender object
+        for i, (k, v) in enumerate(d.items()):
+            ob[k] = v
+
+        # ob["testDataArray"] = d[key_DataPrepTulips3D_data_prof_t_r]
+
+        # ob[key_ob_DataPrepTulips3D_data] = d
 
         # Create a dict as a custom property on the object to hold the arrays
-        ob[key_tulips_data] = {}
-        ob[key_active_profile_key] = d.getGridPropertyLabels()[0]
-        ob[active_time_index] = int(0)
+        # ob[key_tulips_data] = {}
+        ob[key_ob_active_data_label] = ob[key_DataPrepTulips3D_prof_labels][-1]
+        ob[key_ob_active_time_index] = int(0)
 
-        for k in d.getGridPropertyLabels():
-            ob[key_tulips_data].update({k:d.getProperty(k)})
+        create_vert_col(ob)
         
-        update_profile(ob)
+        #update_profile(ob)
 
-        print("Data avaliable: ", d.getGridPropertyLabels(), list(ob[key_tulips_data].keys()))
 
         return {'FINISHED'}
+
+# ######################################################
+# 
+# ######################################################
+def create_vert_col(ob):
+
+    
+    # _data = dict(ob[key_ob_DataPrepTulips3D_data])
+    _profile_data = np.array(ob[key_DataPrepTulips3D_data_prof_t_r])
+    _profile_data = _profile_data.reshape(\
+        len(ob[key_DataPrepTulips3D_prof_labels]),\
+        ob[key_DataPrepTulips3D_t_resolution],\
+        ob[key_DataPrepTulips3D_r_resolution]\
+        )
+    
+    _profile_labels = list(ob[key_DataPrepTulips3D_prof_labels])
+    _profile_index = _profile_labels.index(ob[key_ob_active_data_label])
+
+
+    for t in [0,250, 500, 750, 999]:#range(_profile_data.shape[1]):
+        print("Making vert col: ", t, "/", _profile_data.shape[1])
+        v = _profile_data[_profile_index, t, :]
+        #index_prof = 
+        #_data[key_DataPrepTulips3D_data_prof_t_r]
+
+        #r, v = ob[key_tulips_data][ob[key_active_profile_key]][ob[active_time_index]]
+
+        _data_r_max = np.array(ob[key_DataPrepTulips3D_data_r_max]).reshape(\
+            len(ob[key_DataPrepTulips3D_prof_labels]),\
+            ob[key_DataPrepTulips3D_t_resolution])
+        r_max = _data_r_max[_profile_index, t]
+        r = np.linspace(0., r_max, ob[key_DataPrepTulips3D_r_resolution])
+
+        tulips3dGeometry.make_vertex_colors(\
+                    np.array(r), np.array(v), ob.name, \
+                    vertex_colors_name_base = "v_col_"+ob[key_ob_active_data_label]+"_"+str(t) \
+                    )
+
+
+def update_profile(ob):
+    print()
 
 # ######################################################
 # HANDLERS
 # ######################################################
 def frame_change(scene):
+    print("frame change")
+    # for ob in bpy.data.objects:
+    #     if key_tulips_data in list(ob.keys()):
+    #         print("found key: ", key_tulips_data)
 
-    for ob in bpy.data.objects:
-        if key_tulips_data in list(ob.keys()):
-            ob[active_time_index] = scene.frame_current*ob.mesaAniStep
-            ob.mesaProfileTime = ob[active_time_index]
-            update_profile(ob)
-    # settings = bpy.context.scene.Tulips3DSettingsUI
+    #         ob[active_time_index] = scene.frame_current*ob.mesaAniStep
+    #         ob.mesaProfileTime = ob[active_time_index]
 
-    # obj = bpy.data.objects[settings.ob_name]#.scale = (s, s, s)
-    # bpy.ops.object.select_all(action='DESELECT')
-    # obj.select_set(True)
-    # modul = int(scene.frame_current/len(obj.stellarProperties))
-    # start_ind = obj.stellarProperties[scene.frame_current-modul*len(obj.stellarProperties)].T_index
-    # bpy.ops.geometry.color_attribute_render_set(name="energy_ver_col_"+str(int(start_ind)))
+    #         update_profile(ob)
 
 
 
@@ -253,10 +308,6 @@ def mesaDataProfTime_update(scene, context):
             update_profile(ob)
     print("Time Update")
 
-def update_profile(ob):
-    print("Update", ob[key_active_profile_key], ob[active_time_index])
-    r, v = ob[key_tulips_data][ob[key_active_profile_key]][ob[active_time_index]]
-    tulips3dGeometry.make_vertex_colors(np.array(r), np.array(v), ob.name)
 
 
 def obname_callback(scene, context):

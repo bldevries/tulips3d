@@ -42,6 +42,7 @@ def make_star_pie(ob_name, nr_R, nr_Th, verbose_timing=False):#, \settings,
     # MAKE THE MESH AND VERTS
     if verbose_timing: _ = time()
     verts, edges_radial, edges_th = [], [], []
+    vert_col_radial_index = []
     vert_index = 0
     for iPh, vPh in enumerate(Ph):
         for iTh, vTh in enumerate(Th):
@@ -51,6 +52,7 @@ def make_star_pie(ob_name, nr_R, nr_Th, verbose_timing=False):#, \settings,
                     y = vR*np.sin(vTh)*np.cos(vPh)
                     z = vR*np.cos(vTh)
                     verts.append((x, y, z))
+                    vert_col_radial_index.append(iR)
 
                     if iR != 0 and iR != len(R):
                         edges_radial.append( ( vert_index - 1, vert_index ) )
@@ -68,6 +70,7 @@ def make_star_pie(ob_name, nr_R, nr_Th, verbose_timing=False):#, \settings,
             z = vR*np.cos(vTh)
 
             verts.append((x, y, z))
+            vert_col_radial_index.append(-1)
 
             if iTh != len(Th):
                 edges_th.append( ( vert_index-1 , vert_index) )
@@ -128,6 +131,10 @@ def make_star_pie(ob_name, nr_R, nr_Th, verbose_timing=False):#, \settings,
     # it in the 'Outliner'
     bpy.context.collection.objects.link(ob)
 
+    attribute = mesh.attributes.new(name="vert_col_radial_index", type="INT", domain="POINT")
+    attribute_values = [vert_col_radial_index[i] for i in range(len(mesh.vertices))]
+    attribute.data.foreach_set("value", attribute_values)
+
     # Fill_holes:
     if verbose_timing: _ = time()
     bpy.data.objects[ob_name].select_set(True) # Or: bpy.context.view_layer.objects.active = ob
@@ -141,7 +148,11 @@ def make_star_pie(ob_name, nr_R, nr_Th, verbose_timing=False):#, \settings,
     bpy.ops.mesh.fill_holes()
     #bpy.ops.object.mesh.fill_grid(span=1)
     #bpy.ops.object.mesh.fill()
-    bpy.ops.mesh.remove_doubles()
+
+    remove_doubles = True # This will mess up my link to the colors for the vert col.
+    if remove_doubles:
+        bpy.ops.mesh.remove_doubles()
+    
     bpy.ops.object.editmode_toggle()
     if verbose_timing: print("Timing, pie, filling holes etc", time()-_)
 
@@ -151,6 +162,7 @@ def make_star_pie(ob_name, nr_R, nr_Th, verbose_timing=False):#, \settings,
 # def make_vertex_colors(data_values, ob_name, vertex_colors_name_base):
 # def make_vertex_colors(r, v, settings, vertex_colors_name_base="test_v_colors"):
 def make_vertex_colors(r, v, ob_name, vertex_colors_name_base="test_v_colors"):
+# bpy.data.objects['Star_Pie'].data.attributes['vert_col_radial_index'].data[10].value
 
     ob = bpy.data.objects[ob_name]
     mesh = ob.data
@@ -187,9 +199,13 @@ def make_vertex_colors(r, v, ob_name, vertex_colors_name_base="test_v_colors"):
         for vert_i_poly, vert_i_mesh in enumerate(poly.vertices):#loop_indices:
             #rgb = [random.random(),0,0,0]
             vert_i_loop = poly.loop_indices[vert_i_poly]
+            
+            ind = mesh.attributes['vert_col_radial_index'].data[vert_i_mesh].value
+            
+            #r = np.linalg.norm(ob.data.vertices[vert_i_mesh].co)/10.
+            color = cmap(norm(v[ind]))
+            # color = cmap(norm(interp_value(r * R_star)))
 
-            r = np.linalg.norm(ob.data.vertices[vert_i_mesh].co)/10.
-            color = cmap(norm(interp_value(r * R_star)))
             color_layer.data[vert_i_loop].color = color#(interp_value(r * R_star),0,0,0)#(r, r,0,0)#(interp_value(r/15 * R_star),0,0,0)#vert_colors[vert_i_mesh]#rgb
 
 
@@ -255,3 +271,65 @@ def create_material(name):
     link3 = links.new(node_BSDF_transparency.outputs[0], node_shader_mixer.inputs[1])
     link5 = links.new(node_shader_mixer.outputs[0], node_output.inputs[0])
     return mat
+
+
+
+
+# def make_vertex_colors(r, v, ob_name, vertex_colors_name_base="test_v_colors"):
+
+#     ob = bpy.data.objects[ob_name]
+#     mesh = ob.data
+
+#     # for i, _ in enumerate(data_values):
+#     # print("v cols", i)
+#     radius, value = r, v#_
+#     radius = [0., *radius]
+#     value = [value[0], *value]
+#     interp_value = interp1d(radius, value)#, kind='cubic')
+#     R_star = np.max(radius)
+#     # iT = ob.stellarProperties.T_index[i]
+#     # R_star = ob.stellarProperties.R_star[i]
+
+#     vertex_colors_name = vertex_colors_name_base#+"_"+str(i)
+
+#     # Check if there is a vertex_color attribute and 
+#     # if yes check if the name already exists
+#     if not mesh.vertex_colors:
+#         mesh.vertex_colors.new(name=vertex_colors_name)
+#         color_layer = mesh.vertex_colors[vertex_colors_name]
+#     else:
+#         if not vertex_colors_name in mesh.vertex_colors:
+#             mesh.vertex_colors.new(name=vertex_colors_name)
+#             color_layer = mesh.vertex_colors[vertex_colors_name]
+#         else:
+#             color_layer = mesh.vertex_colors[vertex_colors_name]
+
+#     p = mp.plot(rcparams_fixed=False)
+#     cmap = p.mergeCmaps([plt.cm.Purples_r, plt.cm.hot_r], [[0.0, 0.5], [0.5, 1.0]])
+#     cmin, cmax = -10, 10 #min(value), max(value)
+#     norm = Normalize(vmin=cmin, vmax=cmax)
+#     for poly in mesh.polygons:
+#         for vert_i_poly, vert_i_mesh in enumerate(poly.vertices):#loop_indices:
+#             #rgb = [random.random(),0,0,0]
+#             vert_i_loop = poly.loop_indices[vert_i_poly]
+
+#             r = np.linalg.norm(ob.data.vertices[vert_i_mesh].co)/10.
+#             color = cmap(norm(interp_value(r * R_star)))
+#             color_layer.data[vert_i_loop].color = color#(interp_value(r * R_star),0,0,0)#(r, r,0,0)#(interp_value(r/15 * R_star),0,0,0)#vert_colors[vert_i_mesh]#rgb
+
+
+#         # # # poly.vertices: length is the amount of vertices in the polygon
+#         # # #                the values of the elements are the indeces to the vertices in the mesh
+#         # # # poly.loop_indices:    - length is also the amount of vertices in the polygon
+#         # # #                       - the values of the elements is an index that takes every vertex in a polygon as one unit
+#         # # #                         This is useful because every vertex can have a different color in each polygon that it is part of.
+#         # # #                         Thus color_layer.data can be indexed using the values in loop_index.
+
+#         # # # Every vertex has two indices associated with it. A vertex has one index which is unique for 
+#         # # # the vertex and is used to get the vertex from the mesh (for example to get coordinates of a vertex: 
+#         # # # bpy.data.meshes['Cube'].vertices.data.vertices[0].co). 
+#         # # # A vertex can have (multi) indices of a second kind, often called the loop index. The vertex can be part
+#         # # # of multiple faces (often called polygons) and for every face it is part of it has a different loop indices.
+#         # # # Because a vertex can have a different vertex color for for every face it is part of, 
+#         # # # mesh.vertex_colors[vertex_colors_name].data is indexed with the loop indices. 
+
