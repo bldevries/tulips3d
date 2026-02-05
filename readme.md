@@ -17,3 +17,16 @@ Programmer of the Tulips3D Blender addon.
 
 ## Introduction
 Tulips3D, built upon [Tulips](https://evalaplace.github.io/tools/tulips/), is a Blender addon that visualizes stellar evolution in 3D.
+
+
+## Some first simple examples
+A still render of energy production in a star at three different moment of evolution.
+<div align="center">
+<img src="images/three_examples_tulips3d_4_logo.png" alt="" width="720" height="auto">
+</div>
+
+A rendered animation of three internal properties of the star as function of time. You see energy production, log(T) and log(rho).
+<div align="center">
+<img src="images/simple_test_animation.gif" alt="" width="720" height="auto">
+</div>
+
