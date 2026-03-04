@@ -63,16 +63,6 @@ key_DataPrepTulips3D_data_r_max = "data_r_max"
 
 
 # ######################################################
-# CREATING AND LOOP FUNCTIONs
-# ######################################################
-def create_pieces():
-    print()
-
-def update_pieces():
-    print()
-
-
-# ######################################################
 # OPERATORS
 # ######################################################
 # This operator adds the geometry of one "piece" of the star
@@ -176,6 +166,7 @@ class OBJECT_OT_add_tulips3d_geo(bpy.types.Operator):
 #
 # ######################################################
 def update_profile(ob):
+    print("Updating profile: ", ob.name)
     # _data = dict(ob[key_ob_DataPrepTulips3D_data])
     _profile_data = np.array(ob[key_DataPrepTulips3D_data_prof_t_r])
     _profile_data = _profile_data.reshape(\
@@ -188,6 +179,8 @@ def update_profile(ob):
     _profile_index = _profile_labels.index(ob[key_ob_active_data_label])
     #key_ob_active_time_index
 
+    print("  ", _profile_index, ob[key_ob_active_data_label])
+
     v = _profile_data[_profile_index, ob[key_ob_active_time_index], :]
 
     _data_r_max = np.array(ob[key_DataPrepTulips3D_data_r_max]).reshape(\
@@ -197,7 +190,7 @@ def update_profile(ob):
     r = np.linspace(0., r_max, ob[key_DataPrepTulips3D_r_resolution])
 
     tulips3dGeometry.make_vertex_colors(\
-                np.array(r), np.array(v), ob.name, \
+                np.array(r), np.array(v), ob, \
                 vertex_colors_name_base = "v_col_active", \
                 verbose=False\
                 )
@@ -211,17 +204,25 @@ def update_profile(ob):
 # HANDLERS
 # ######################################################
 def frame_change(scene):
-    # print("frame change")
+    print("frame change")
     for ob in bpy.data.objects:
         if key_ob_active_time_index in list(ob.keys()):
-            new_time_index = scene.frame_current*ob.mesaAniStep
-            if new_time_index >= ob[key_DataPrepTulips3D_t_resolution]:
-                new_time_index = ob[key_DataPrepTulips3D_t_resolution]-1
-
-            ob[key_ob_active_time_index] = new_time_index
-            ob.mesaProfileTime = ob[key_ob_active_time_index]
+            if ob.mesaProfileTime != ob[key_ob_active_time_index]:
+                ob[key_ob_active_time_index] = ob.mesaProfileTime
+                # print("NOT THE SAME!!", ob.mesaProfileTime, ob[key_ob_active_time_index])
 
             update_profile(ob)
+
+    # for ob in bpy.data.objects:
+    #     if key_ob_active_time_index in list(ob.keys()):
+    #         new_time_index = scene.frame_current*ob.mesaAniStep
+    #         if new_time_index >= ob[key_DataPrepTulips3D_t_resolution]:
+    #             new_time_index = ob[key_DataPrepTulips3D_t_resolution]-1
+
+    #         ob[key_ob_active_time_index] = new_time_index
+    #         ob.mesaProfileTime = ob[key_ob_active_time_index]
+
+    #         update_profile(ob)
 
 
 
@@ -238,12 +239,12 @@ class Tulips3DSettingsUI(bpy.types.PropertyGroup):
         default="Star_Pie",
     )
     
-    file_path_data1d_default = '/Users/vries001/Dropbox/0_DATA_BEN/PHYSICS/PROJECTS/tulips3D/example_MESA_data/Data1DFormat/binary.pkl'
+    file_path_data1d_default = '/Users/vries001/Dropbox/0_DATA_BEN/PHYSICS/PROJECTS/tulips3D/example_MESA_data/DataDictFormat/binary.pkl'
     file_path_data1d : StringProperty(
         name="MESA data in Data1D format path",
         description="MESA data in Data1D format path",
         default=file_path_data1d_default,
-        subtype="DIR_PATH"
+        subtype="FILE_PATH"
     )
 
     # type : EnumProperty(
@@ -256,21 +257,21 @@ class Tulips3DSettingsUI(bpy.types.PropertyGroup):
     #     default='ENERGY',
     # )
 
-    time_index_step : IntProperty(
-        name="time_index_step",
-        description="Time index step size for animation",
-        default=1000,
-        # min=3,
-        # max=256,
-    )
+    # time_index_step : IntProperty(
+    #     name="time_index_step",
+    #     description="Time index step size for animation",
+    #     default=1000,
+    #     # min=3,
+    #     # max=256,
+    # )
 
-    mesh_r_nr_steps : IntProperty(
-        name="Radial #steps mesh",
-        description="",
-        default=50,
-        # min=3,
-        # max=256,
-    )
+    # mesh_r_nr_steps : IntProperty(
+    #     name="Radial #steps mesh",
+    #     description="",
+    #     default=50,
+    #     # min=3,
+    #     # max=256,
+    # )
 
     mesh_th_nr_steps : IntProperty(
         name="Theta #steps mesh",
@@ -299,8 +300,8 @@ class VIEW3D_PT_tulips3d_panel(bpy.types.Panel):
         # col.prop(settings, "ani_type")
         # if settings.ani_type == "STILL":
         # col.prop(settings, "type")
-        col.prop(settings, "time_index_step")
-        col.prop(settings, "mesh_r_nr_steps")
+        # col.prop(settings, "time_index_step")
+        # col.prop(settings, "mesh_r_nr_steps")
         col.prop(settings, "mesh_th_nr_steps")
 
         # col.prop(settings, "shape")
@@ -322,13 +323,13 @@ def mesaDataProfEnum_callback(scene, context):
     items = []
     # get selection
     selection = bpy.context.selected_objects
-    print("mesaDataProfEnum_callback", selection)
+    # print("mesaDataProfEnum_callback", selection)
     if len(selection) == 1:
-        print("  mesaDataProfEnum_callback", "selection==1")
+        # print("  mesaDataProfEnum_callback", "selection==1")
         ob = bpy.context.selected_objects[0]
         # Check if the object has mesa profile data attached
         if key_DataPrepTulips3D_prof_labels in ob.keys():
-            print("  mesaDataProfEnum_callback", ob[key_DataPrepTulips3D_prof_labels])
+            # print("  mesaDataProfEnum_callback", ob[key_DataPrepTulips3D_prof_labels])
         #if key_tulips_data in ob.keys():
             for k in ob[key_DataPrepTulips3D_prof_labels]:
                 items.append((k, k, ""))
@@ -342,12 +343,12 @@ def mesaDataProfEnum_callback(scene, context):
 def mesaDataProfEnum_update(scene, context):
     selected_profile = context.object.mesaProfileEnum
     selected = context.selected_objects
-    print("mesaDataProfEnum_update", selected)
+    # print("mesaDataProfEnum_update", selected)
     if len(selected) == 1:
-        print("  mesaDataProfEnum_update", len(selected))
+        # print("  mesaDataProfEnum_update", len(selected))
         ob = selected[0]
         if  selected_profile != ob[key_ob_active_data_label]:
-            print("  mesaDataProfEnum_update", "new label")
+            # print("  mesaDataProfEnum_update", "new label")
             ob[key_ob_active_data_label] = selected_profile
             update_profile(ob)
         # print("mesaDataProfEnum_update: STILL NEED TO USE TIME INDEX!!")
@@ -355,6 +356,9 @@ def mesaDataProfEnum_update(scene, context):
 def mesaDataProfTime_update(scene, context):
     selected_time_index = context.object.mesaProfileTime
     selected = context.selected_objects
+    
+    # print("mesaDataProfTime_update")
+
     if len(selected) == 1:
         ob = selected[0]
         if  selected_time_index != ob[key_ob_active_time_index]:
