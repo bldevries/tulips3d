@@ -81,14 +81,6 @@ class OBJECT_OT_add_tulips3d_geo(bpy.types.Operator):
         print("MESA data keys avaliable: ", d.keys())
         print("MESA data profiles avaliable: ", d[key_DataPrepTulips3D_prof_labels])
 
-        # Create the geometry of the 3d pie slice
-        # ob = tulips3dGeometry.make_star_pie(\
-        #     ob_name=settings.ob_name, \
-        #     nr_R=d[key_DataPrepTulips3D_r_resolution], \
-        #     # nr_R=settings.mesh_r_nr_steps, \
-        #     nr_Th=settings.mesh_th_nr_steps, \
-        #     verbose_timing=True)
-
         ob = tulips3dGeometry.make_star_pie(\
             ob_name=settings.ob_name, \
             R = BLENDER_STAR_SCALE,\
@@ -101,7 +93,7 @@ class OBJECT_OT_add_tulips3d_geo(bpy.types.Operator):
 
         ob.select_set(True)
 
-        # Store all the dict data onto the Blender object
+
         for i, (k, v) in enumerate(d.items()):
             ob[k] = v
 
@@ -112,9 +104,7 @@ class OBJECT_OT_add_tulips3d_geo(bpy.types.Operator):
         # ob[key_ob_DataPrepTulips3D_data] = d
 
         # Create a dict as a custom property on the object to hold the arrays
-        # ob[key_tulips_data] = {}
         ob[key_ob_active_data_label] = ob[key_DataPrepTulips3D_prof_labels][0]
-        # ob.mesaProfileEnum = ob[key_ob_active_data_label]
         ob[key_ob_active_time_index] = int(0)
 
         print("Actives set")
@@ -125,48 +115,12 @@ class OBJECT_OT_add_tulips3d_geo(bpy.types.Operator):
 
         return {'FINISHED'}
 
-# ######################################################
-# 
-# ######################################################
-# def create_vert_col(ob, verbose=False):
-
-#     # _data = dict(ob[key_ob_DataPrepTulips3D_data])
-#     _profile_data = np.array(ob[key_DataPrepTulips3D_data_prof_t_r])
-#     _profile_data = _profile_data.reshape(\
-#         len(ob[key_DataPrepTulips3D_prof_labels]),\
-#         ob[key_DataPrepTulips3D_t_resolution],\
-#         ob[key_DataPrepTulips3D_r_resolution]\
-#         )
-    
-#     _profile_labels = list(ob[key_DataPrepTulips3D_prof_labels])
-#     _profile_index = _profile_labels.index(ob[key_ob_active_data_label])
-
-
-#     for t in range(_profile_data.shape[1]): #[0,250, 500, 750, 999]:#
-#         if verbose: print("Making vert col: ", t, "/", _profile_data.shape[1])
-#         v = _profile_data[_profile_index, t, :]
-#         #index_prof = 
-#         #_data[key_DataPrepTulips3D_data_prof_t_r]
-
-#         #r, v = ob[key_tulips_data][ob[key_active_profile_key]][ob[active_time_index]]
-
-#         _data_r_max = np.array(ob[key_DataPrepTulips3D_data_r_max]).reshape(\
-#             len(ob[key_DataPrepTulips3D_prof_labels]),\
-#             ob[key_DataPrepTulips3D_t_resolution])
-#         r_max = _data_r_max[_profile_index, t]
-#         r = np.linspace(0., r_max, ob[key_DataPrepTulips3D_r_resolution])
-
-#         tulips3dGeometry.make_vertex_colors(\
-#                     np.array(r), np.array(v), ob.name, \
-#                     vertex_colors_name_base = "v_col_"+ob[key_ob_active_data_label]+"_"+str(t), \
-#                     verbose=False\
-#                     )
 
 # ######################################################
 #
 # ######################################################
 def update_profile(ob):
-    print("Updating profile: ", ob.name)
+    print("  Updating profile: ", ob.name)
     # _data = dict(ob[key_ob_DataPrepTulips3D_data])
     _profile_data = np.array(ob[key_DataPrepTulips3D_data_prof_t_r])
     _profile_data = _profile_data.reshape(\
@@ -176,10 +130,11 @@ def update_profile(ob):
         )
     
     _profile_labels = list(ob[key_DataPrepTulips3D_prof_labels])
+    print(f"   {ob[key_ob_active_data_label]}")
     _profile_index = _profile_labels.index(ob[key_ob_active_data_label])
     #key_ob_active_time_index
 
-    print("  ", _profile_index, ob[key_ob_active_data_label])
+    print("    ", _profile_index, ob[key_ob_active_data_label])
 
     v = _profile_data[_profile_index, ob[key_ob_active_time_index], :]
 
@@ -188,6 +143,10 @@ def update_profile(ob):
         ob[key_DataPrepTulips3D_t_resolution])
     r_max = _data_r_max[_profile_index, ob[key_ob_active_time_index]]
     r = np.linspace(0., r_max, ob[key_DataPrepTulips3D_r_resolution])
+
+    print("    ", ob)
+    print("    ", v[0:5])
+
 
     tulips3dGeometry.make_vertex_colors(\
                 np.array(r), np.array(v), ob, \
@@ -199,9 +158,11 @@ def update_profile(ob):
 
     ob.scale = [1.*r_max/r_max_0 for i in range(3)]
 
+    print("")
+
 
 # ######################################################
-# HANDLERS
+# HANDLERS & CALLBACKS
 # ######################################################
 def frame_change(scene):
     print("frame change")
@@ -224,92 +185,6 @@ def frame_change(scene):
 
     #         update_profile(ob)
 
-
-
-
-# ######################################################
-# UI
-# ######################################################
-
-class Tulips3DSettingsUI(bpy.types.PropertyGroup):
-    """Container for UI‑exposed settings"""
-    ob_name : StringProperty(
-        name="Object name",
-        description="Name of the object in Blender",
-        default="Star_Pie",
-    )
-    
-    file_path_data1d_default = '/Users/vries001/Dropbox/0_DATA_BEN/PHYSICS/PROJECTS/tulips3D/example_MESA_data/DataDictFormat/binary.pkl'
-    file_path_data1d : StringProperty(
-        name="MESA data in Data1D format path",
-        description="MESA data in Data1D format path",
-        default=file_path_data1d_default,
-        subtype="FILE_PATH"
-    )
-
-    # type : EnumProperty(
-    #     name="Type",
-    #     description="What MESA data type to use",
-    #     items=[
-    #         ('ENERGY',   "Energy",   ""),
-    #         ('NEXT',   "Which is next?",   ""),
-    #     ],
-    #     default='ENERGY',
-    # )
-
-    # time_index_step : IntProperty(
-    #     name="time_index_step",
-    #     description="Time index step size for animation",
-    #     default=1000,
-    #     # min=3,
-    #     # max=256,
-    # )
-
-    # mesh_r_nr_steps : IntProperty(
-    #     name="Radial #steps mesh",
-    #     description="",
-    #     default=50,
-    #     # min=3,
-    #     # max=256,
-    # )
-
-    mesh_th_nr_steps : IntProperty(
-        name="Theta #steps mesh",
-        description="",
-        default=50,
-        # min=3,
-        # max=256,
-    )
-
-
-class VIEW3D_PT_tulips3d_panel(bpy.types.Panel):
-    """Panel placed in the Properties editor → Scene tab"""
-    bl_label = "Tulips3D"
-    bl_idname = "VIEW3D_PT_tulips3d_panel"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"          # appears under the Scene tab
-
-    def draw(self, context):
-        layout = self.layout
-        settings = context.scene.Tulips3DSettingsUI
-
-        col = layout.column()
-        col.prop(settings, "ob_name")
-        col.prop(settings, "file_path_data1d")
-        # col.prop(settings, "ani_type")
-        # if settings.ani_type == "STILL":
-        # col.prop(settings, "type")
-        # col.prop(settings, "time_index_step")
-        # col.prop(settings, "mesh_r_nr_steps")
-        col.prop(settings, "mesh_th_nr_steps")
-
-        # col.prop(settings, "shape")
-        # col.prop(settings, "size")
-        # col.prop(settings, "segments")
-
-        col.separator()
-        col.operator("object.tulips3d", icon='MESH_CUBE')
 
 
 
@@ -400,7 +275,93 @@ def update_obname(self, context):
 #         update=mesaDataProfEnum_update
 #         )
 
+
+
+# ######################################################
+# UI
+# ######################################################
+
+class Tulips3DSettingsUI(bpy.types.PropertyGroup):
+    """Container for UI‑exposed settings"""
+    ob_name : StringProperty(
+        name="Object name",
+        description="Name of the object in Blender",
+        default="Star_Pie",
+    )
     
+    file_path_data1d_default = '/Users/vries001/Dropbox/0_DATA_BEN/PHYSICS/PROJECTS/tulips3D/example_MESA_data/DataDictFormat/binary.pkl'
+    file_path_data1d : StringProperty(
+        name="MESA data in Data1D format path",
+        description="MESA data in Data1D format path",
+        default=file_path_data1d_default,
+        subtype="FILE_PATH"
+    )
+
+    # type : EnumProperty(
+    #     name="Type",
+    #     description="What MESA data type to use",
+    #     items=[
+    #         ('ENERGY',   "Energy",   ""),
+    #         ('NEXT',   "Which is next?",   ""),
+    #     ],
+    #     default='ENERGY',
+    # )
+
+    # time_index_step : IntProperty(
+    #     name="time_index_step",
+    #     description="Time index step size for animation",
+    #     default=1000,
+    #     # min=3,
+    #     # max=256,
+    # )
+
+    # mesh_r_nr_steps : IntProperty(
+    #     name="Radial #steps mesh",
+    #     description="",
+    #     default=50,
+    #     # min=3,
+    #     # max=256,
+    # )
+
+    mesh_th_nr_steps : IntProperty(
+        name="Theta #steps mesh",
+        description="",
+        default=50,
+        # min=3,
+        # max=256,
+    )
+
+
+class VIEW3D_PT_tulips3d_panel(bpy.types.Panel):
+    """Panel placed in the Properties editor → Scene tab"""
+    bl_label = "Tulips3D"
+    bl_idname = "VIEW3D_PT_tulips3d_panel"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"          # appears under the Scene tab
+
+    def draw(self, context):
+        layout = self.layout
+        settings = context.scene.Tulips3DSettingsUI
+
+        col = layout.column()
+        col.prop(settings, "ob_name")
+        col.prop(settings, "file_path_data1d")
+        # col.prop(settings, "ani_type")
+        # if settings.ani_type == "STILL":
+        # col.prop(settings, "type")
+        # col.prop(settings, "time_index_step")
+        # col.prop(settings, "mesh_r_nr_steps")
+        col.prop(settings, "mesh_th_nr_steps")
+
+        # col.prop(settings, "shape")
+        # col.prop(settings, "size")
+        # col.prop(settings, "segments")
+
+        col.separator()
+        col.operator("object.tulips3d", icon='MESH_CUBE')
+
+
 
 class SIDEBAR_PT_tulips3d_panel(bpy.types.Panel):
     """Panel placed in the Properties editor → Scene tab"""
