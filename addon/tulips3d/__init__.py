@@ -395,8 +395,8 @@ class SIDEBAR_PT_tulips3d_panel(bpy.types.Panel):
         col.separator(factor=1.0, type='LINE')
         col.label(text = "MESA time index: ")
         col.prop(context.object, "mesaProfileTime")
-        col.label(text = "Animation index step/frame: ")
-        col.prop(context.object, "mesaAniStep")
+        # col.label(text = "Animation index step/frame: ")
+        # col.prop(context.object, "mesaAniStep")
         
         # # col.prop(settings, "ani_type")
         # # if settings.ani_type == "STILL":
