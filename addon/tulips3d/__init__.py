@@ -122,6 +122,11 @@ class OBJECT_OT_add_tulips3d_geo(bpy.types.Operator):
             ob[key_ob_active_data_label] = ob[key_DataPrepTulips3D_prof_labels][0]
             ob[key_ob_active_time_index] = int(0)
 
+            for child in ob.children:
+                # if child["pie_type"] == "pie":
+                child[key_ob_active_data_label] = ob[key_DataPrepTulips3D_prof_labels][0]
+                child[key_ob_active_time_index] = int(0)
+
             print("Actives set")
 
             update_profile(ob)#, verbose=True)
@@ -285,9 +290,12 @@ def mesaDataProfEnum_callback(scene, context):
         # print("  mesaDataProfEnum_callback", "selection==1")
         ob = bpy.context.selected_objects[0]
         # Check if the object has mesa profile data attached
-        if key_DataPrepTulips3D_prof_labels in ob.keys():
-            # print("  mesaDataProfEnum_callback", ob[key_DataPrepTulips3D_prof_labels])
-        #if key_tulips_data in ob.keys():
+        # if key_DataPrepTulips3D_prof_labels in ob.keys():
+        if "pie_type" in ob.keys():
+            if ob['pie_type'] != "empty":
+                ob = ob.parent
+
+            print("  mesaDataProfEnum_callback", ob[key_DataPrepTulips3D_prof_labels])
             for k in ob[key_DataPrepTulips3D_prof_labels]:
                 items.append((k, k, ""))
         
@@ -299,16 +307,29 @@ def mesaDataProfEnum_callback(scene, context):
 # This is called when the user selects a mesa profile in the sidebar
 # and this should this update the geometry
 def mesaDataProfEnum_update(scene, context):
+    print("==> mesaDataProfEnum_update ")
     selected_profile = context.object.mesaProfileEnum
     selected = context.selected_objects
     # print("mesaDataProfEnum_update", selected)
     if len(selected) == 1:
         # print("  mesaDataProfEnum_update", len(selected))
         ob = selected[0]
-        if  selected_profile != ob[key_ob_active_data_label]:
-            # print("  mesaDataProfEnum_update", "new label")
-            ob[key_ob_active_data_label] = selected_profile
-            update_profile(ob)
+
+        if "pie_type" in ob.keys():
+            if ob['pie_type'] != "empty":
+                ob = ob.parent
+
+            if  selected_profile != ob[key_ob_active_data_label]:
+                print("  mesaDataProfEnum_update", "UPDATING LABEL")
+                ob[key_ob_active_data_label] = selected_profile
+                ob.mesaProfileEnum = selected_profile
+                for child in ob.children:
+                    # if child["pie_type"] == "pie":
+                    child[key_ob_active_data_label] = selected_profile
+                    child.mesaProfileEnum = selected_profile
+                update_profile(ob)
+            else:
+                print("  mesaDataProfEnum_update", "NOT UPDATING LABEL")
         # print("mesaDataProfEnum_update: STILL NEED TO USE TIME INDEX!!")
 
 def mesaDataProfTime_update(scene, context):
@@ -475,6 +496,7 @@ class SIDEBAR_PT_tulips3d_panel(bpy.types.Panel):
     # bl_context = "scene"          # appears under the Scene tab
 
     def draw(self, context):
+        print("==> SIDEBAR_PT_tulips3d_panel ")
         layout = self.layout
         # settings = context.scene.Tulips3DSettingsUI_sidebar
 
