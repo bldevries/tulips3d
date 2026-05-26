@@ -11,6 +11,8 @@ else:
     # from . import tulips3dData
     from . import tulips3dGeometry
 
+from . import blackbody
+
 import bpy
 from bpy.props import (
     FloatProperty,
@@ -63,7 +65,8 @@ key_DataPrepTulips3D_t_resolution = "t_resolution"
 # the "data_prof_t_r" key. It contains the MESA data in the 
 # resolution (prof_labels, t_resolution, r_resolution)
 key_DataPrepTulips3D_data_prof_t_r = "data_prof_t_r"
-
+key_DataPrepTulips3D_data_t = "data_t"
+key_DataPrepTulips3D_data_t_Teff = "logTeff"
 
 key_DataPrepTulips3D_data_r_max = "data_r_max"
 
@@ -104,6 +107,7 @@ class OBJECT_OT_add_tulips3d_geo(bpy.types.Operator):
                 nr_Th=settings.mesh_th_nr_steps, \
                 phi_start = settings.phi_start_pie/360. * 2*np.pi , \
                 phi_end = 2*np.pi/len(d[key_DataPrepTulips3D_prof_labels]),\
+                texture_path = settings.file_path_texture_star,\
                 verbose_timing=False)
 
             print("Object made")
@@ -122,10 +126,10 @@ class OBJECT_OT_add_tulips3d_geo(bpy.types.Operator):
             ob[key_ob_active_data_label] = ob[key_DataPrepTulips3D_prof_labels][0]
             ob[key_ob_active_time_index] = int(0)
 
-            for child in ob.children:
-                # if child["pie_type"] == "pie":
-                child[key_ob_active_data_label] = ob[key_DataPrepTulips3D_prof_labels][0]
-                child[key_ob_active_time_index] = int(0)
+            # for child in ob.children:
+            #     # if child["pie_type"] == "pie":
+            #     child[key_ob_active_data_label] = ob[key_DataPrepTulips3D_prof_labels][0]
+            #     child[key_ob_active_time_index] = int(0)
 
             print("Actives set")
 
@@ -148,49 +152,71 @@ class OBJECT_OT_add_tulips3d_geo(bpy.types.Operator):
 def update_profile(ob):
     """Updates the profile of ob"""
     print("** Updating profile for ", ob.name)
-    print("  keys:", ob.keys())
     pie_objects = []
+    outer_sph = None
     if "pie_type" in ob.keys():
-        print("   found pie_type", ob['pie_type'])
         if ob["pie_type"] == "empty":
             empty = ob
         else:
             empty = ob.parent
 
         for child in empty.children:
-            print("   CHild found, type ", child["pie_type"])
             if child["pie_type"] == "pie":
                 pie_objects.append(child)
+            elif child["pie_type"] == "outer_sph":
+                outer_sph = child
 
-        print("  Children found", pie_objects)
+        # GET THE DATA AND FORMAT
+        # _data = dict(ob[key_ob_DataPrepTulips3D_data])
+        _profile_data = np.array(empty[key_DataPrepTulips3D_data_prof_t_r])
+        _profile_data = _profile_data.reshape(\
+            len(empty[key_DataPrepTulips3D_prof_labels]),\
+            empty[key_DataPrepTulips3D_t_resolution],\
+            empty[key_DataPrepTulips3D_r_resolution]\
+            )
+        
+        _profile_labels = list(empty[key_DataPrepTulips3D_prof_labels])
+        _profile_index = _profile_labels.index(empty[key_ob_active_data_label])
 
+        v = _profile_data[_profile_index, empty[key_ob_active_time_index], :]
+
+        _data_r_max = np.array(empty[key_DataPrepTulips3D_data_r_max]).reshape(\
+            len(empty[key_DataPrepTulips3D_prof_labels]),\
+            empty[key_DataPrepTulips3D_t_resolution])
+        r_max = _data_r_max[_profile_index, empty[key_ob_active_time_index]]
+        r = np.linspace(0., r_max, empty[key_DataPrepTulips3D_r_resolution])
+
+            # Update the outer shell of the star
+        _profile_data_t = empty[key_DataPrepTulips3D_data_t]
+        arrTeff = _profile_data_t[key_DataPrepTulips3D_data_t_Teff]
+        # for idx, item in enumerate(_profile_data_t):
+        #     print(_profile_data_t)
+        #     print(item.name)
+        #     if item.name == target_name:  # or whatever matching criterion
+        #         Teff = item[key_ob_active_time_index]
+        #         break
+        # Teff = _profile_data_t[key_DataPrepTulips3D_data_t_Teff][key_ob_active_time_index]
+        logTeff = np.array(arrTeff)[empty[key_ob_active_time_index]]
+
+        # print( colormodels.irgb_string_from_xyz(blackbody.blackbody_color(Teff)) )
+        
+        print("TEFFFFF ----------")
+        print(logTeff)
+        print(blackbody.blackbody_color(10**logTeff))
+        print(colormodels.irgb_string_from_xyz(blackbody.blackbody_color(10**logTeff)))
+        eff_temp_color = [i/255 for i in colormodels.irgb_from_xyz(blackbody.blackbody_color(10**logTeff))]
+        print(eff_temp_color)
+        eff_temp_color = eff_temp_color + [1.]
+        print(eff_temp_color)
+
+        # eff_temp_color=colormodels.irgb_string_from_xyz(blackbody.blackbody_color(10**logTeff))#[1., 0., 1., 1.]
+        tulips3dGeometry.make_vertex_colors_surface(outer_sph, eff_temp_color, vertex_colors_name_base="test_surface_colors")
+
+        
+
+
+        # Update the pie slices
         for pie_ob in pie_objects:
-            print("  Updating profile: ", empty.name)
-            # _data = dict(ob[key_ob_DataPrepTulips3D_data])
-            _profile_data = np.array(empty[key_DataPrepTulips3D_data_prof_t_r])
-            _profile_data = _profile_data.reshape(\
-                len(empty[key_DataPrepTulips3D_prof_labels]),\
-                empty[key_DataPrepTulips3D_t_resolution],\
-                empty[key_DataPrepTulips3D_r_resolution]\
-                )
-            
-            _profile_labels = list(empty[key_DataPrepTulips3D_prof_labels])
-            print(f"   {empty[key_ob_active_data_label]}")
-            _profile_index = _profile_labels.index(empty[key_ob_active_data_label])
-            #key_ob_active_time_index
-
-            print("    ", _profile_index, empty[key_ob_active_data_label])
-
-            v = _profile_data[_profile_index, empty[key_ob_active_time_index], :]
-
-            _data_r_max = np.array(empty[key_DataPrepTulips3D_data_r_max]).reshape(\
-                len(empty[key_DataPrepTulips3D_prof_labels]),\
-                empty[key_DataPrepTulips3D_t_resolution])
-            r_max = _data_r_max[_profile_index, empty[key_ob_active_time_index]]
-            r = np.linspace(0., r_max, empty[key_DataPrepTulips3D_r_resolution])
-
-            print("    ", empty)
-            print("    ", v[0:5])
 
 
             tulips3dGeometry.make_vertex_colors(\
@@ -202,8 +228,6 @@ def update_profile(ob):
             r_max_0 = _data_r_max[_profile_index, 0]
 
             empty.scale = [1.*r_max/r_max_0 for i in range(3)]
-
-            print("")
 
 
 # def update_profile(ob):
@@ -275,6 +299,7 @@ def frame_change(scene):
 # and it updates which enum options are available in the
 # sidebar
 def mesaDataProfEnum_callback(scene, context):
+    print("** mesaDataProfEnum_callback")
     # print("SELECTING!!!!!!", bpy.context.selected_objects)
         # context.scene.Tulips3DSettingsUI_sidebar.mesaDataProfEnum, \
         # type(context.scene.Tulips3DSettingsUI_sidebar.mesaDataProfEnum))
@@ -294,8 +319,6 @@ def mesaDataProfEnum_callback(scene, context):
         if "pie_type" in ob.keys():
             if ob['pie_type'] != "empty":
                 ob = ob.parent
-
-            print("  mesaDataProfEnum_callback", ob[key_DataPrepTulips3D_prof_labels])
             for k in ob[key_DataPrepTulips3D_prof_labels]:
                 items.append((k, k, ""))
         
@@ -307,7 +330,7 @@ def mesaDataProfEnum_callback(scene, context):
 # This is called when the user selects a mesa profile in the sidebar
 # and this should this update the geometry
 def mesaDataProfEnum_update(scene, context):
-    print("==> mesaDataProfEnum_update ")
+    print("** mesaDataProfEnum_update ")
     selected_profile = context.object.mesaProfileEnum
     selected = context.selected_objects
     # print("mesaDataProfEnum_update", selected)
@@ -320,36 +343,60 @@ def mesaDataProfEnum_update(scene, context):
                 ob = ob.parent
 
             if  selected_profile != ob[key_ob_active_data_label]:
-                print("  mesaDataProfEnum_update", "UPDATING LABEL")
                 ob[key_ob_active_data_label] = selected_profile
-                ob.mesaProfileEnum = selected_profile
-                for child in ob.children:
-                    # if child["pie_type"] == "pie":
-                    child[key_ob_active_data_label] = selected_profile
-                    child.mesaProfileEnum = selected_profile
+                #ob.mesaProfileEnum = selected_profile
+                # for child in ob.children:
+                #     # if child["pie_type"] == "pie":
+                #     child[key_ob_active_data_label] = selected_profile
+                #     child.mesaProfileEnum = selected_profile
                 update_profile(ob)
-            else:
-                print("  mesaDataProfEnum_update", "NOT UPDATING LABEL")
-        # print("mesaDataProfEnum_update: STILL NEED TO USE TIME INDEX!!")
+            # else:
+                # print("  mesaDataProfEnum_update", "NOT UPDATING LABEL")
 
 def mesaDataProfTime_update(scene, context):
+    print("** mesaDataProfTime_update", context.selected_objects)
     selected_time_index = context.object.mesaProfileTime
     selected = context.selected_objects
     
     # print("mesaDataProfTime_update")
 
     if len(selected) == 1:
-        ob = selected[0]
-        if  selected_time_index != ob[key_ob_active_time_index]:
+        if selected[0]['pie_type'] == "empty":
+            selected = selected[0]#.parent
 
-            if selected_time_index < ob[key_DataPrepTulips3D_t_resolution]:
-                ob[key_ob_active_time_index] = selected_time_index
-            else:
-                ob[key_ob_active_time_index] = ob[key_DataPrepTulips3D_t_resolution]-1
-                context.object.mesaProfileTime = ob[key_ob_active_time_index]
-            update_profile(ob)
+            if selected_time_index != selected[key_ob_active_time_index]:
+                if selected_time_index < selected[key_DataPrepTulips3D_t_resolution]:
+                    selected[key_ob_active_time_index] = selected_time_index
+                    #ob.mesaProfileTime = selected_time_index
+                else:
+                    selected[key_ob_active_time_index] = selected[key_DataPrepTulips3D_t_resolution]-1
+                    # context.object.mesaProfileTime = ob[key_ob_active_time_index]
+                    # Update only the property for the objects not selected
+                    selected.mesaProfileTime = selected[key_DataPrepTulips3D_t_resolution]-1#ob[key_ob_active_time_index]
+
+                update_profile(selected)
     # print("Time Update")
 
+
+# def mesaDataProfTime_update(scene, context):
+#     selected_time_index = context.object.mesaProfileTime
+#     selected = context.selected_objects
+    
+#     # print("mesaDataProfTime_update")
+
+#     if len(selected) == 1:
+#         ob = selected[0]
+#         if  selected_time_index != ob[key_ob_active_time_index]:
+            
+#             if selected_time_index < ob[key_DataPrepTulips3D_t_resolution]:
+#                 ob[key_ob_active_time_index] = selected_time_index
+#             else:
+#                 ob[key_ob_active_time_index] = ob[key_DataPrepTulips3D_t_resolution]-1
+#                 context.object.mesaProfileTime = ob[key_ob_active_time_index]
+
+
+#             update_profile(ob)
+#     # print("Time Update")
 
 
 def obname_callback(scene, context):
@@ -510,13 +557,23 @@ class SIDEBAR_PT_tulips3d_panel(bpy.types.Panel):
 
         # col.prop(settings, "ob_name")
         # col.prop(settings, "mesaDataProfEnum")
-        col.separator(factor=1.0, type='LINE')
-        col.label(text = "MESA Profile: ")
-        col.prop(context.object, "mesaProfileEnum")
 
-        col.separator(factor=1.0, type='LINE')
-        col.label(text = "MESA time index: ")
-        col.prop(context.object, "mesaProfileTime")
+        if context.object:
+            if 'pie_type' in context.object.keys():
+                if context.object['pie_type'] != "empty":
+                    ob = context.object.parent
+                else:
+                    ob = context.object
+
+            if 'pie_type' in context.object.keys():
+                if context.object['pie_type'] == "empty":
+                    col.separator(factor=1.0, type='LINE')
+                    col.label(text = "MESA Profile: ")
+                    col.prop(ob, "mesaProfileEnum")
+
+                    col.separator(factor=1.0, type='LINE')
+                    col.label(text = "MESA time index: ")
+                    col.prop(ob, "mesaProfileTime")
         # col.label(text = "Animation index step/frame: ")
         # col.prop(context.object, "mesaAniStep")
         

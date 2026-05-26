@@ -20,7 +20,7 @@ from scipy.interpolate import interp1d
 import mesaPlot as mp
 
 
-def make_star_pie(ob_name, R, nr_R, nr_Th, phi_start = 0.0, phi_end=30.0, verbose_timing=False):#, \settings, 
+def make_star_pie(ob_name, R, nr_R, nr_Th, texture_path, phi_start = 0.0, phi_end=30.0, verbose_timing=False):#, \settings, 
     '''Make the geometry for a pie cut from the star'''
 
     #phi_start, phi_end = 0., 2*np.pi/pie_fraction
@@ -37,7 +37,7 @@ def make_star_pie(ob_name, R, nr_R, nr_Th, phi_start = 0.0, phi_end=30.0, verbos
     bool_cut["pie_type"] = "bool_cut"
 
     print("** Making the outer sphere")
-    sphere = make_outside_star_pie(ob_name+"_outer_sph", R, bool_cut)
+    sphere = make_outside_star_pie(ob_name+"_outer_sph", R, bool_cut, texture_path)
     sphere.select_set(True)
     sphere["pie_type"] = "outer_sph"
 
@@ -199,7 +199,13 @@ def make_pie_side(ob_name, R, nr_R, nr_Th, verbose_timing=False):
 # ######################################################
 # Make star outside
 # ######################################################
-def make_outside_star_pie(ob_name, R, pie_for_boolean):
+# Usage:
+# make_outside_star_pie("MyStarPie", 1.0, bpy.data.objects["PieShape"], "MyTexture.png")
+# Usage Example:
+# make_outside_star_pie("MyCutSphere", 1.0, bpy.data.objects["MyPieObject"])
+# Usage Example:
+# make_outside_star_pie("MyCutSphere", 1.0, bpy.data.objects["MyPieObject"])
+def make_outside_star_pie(ob_name, R, pie_for_boolean, texture_path, material_name="outer_shell_mat"):
     # 1. Create a UV Sphere
     bpy.ops.mesh.primitive_uv_sphere_add(
         radius=R,
@@ -220,6 +226,43 @@ def make_outside_star_pie(ob_name, R, pie_for_boolean):
         bool_mod.object = pie_for_boolean
     else:
         print("Warning: Boolean object 'YourBooleanObject' not found!")
+
+
+
+
+    # 4. Add a Texture (using Node-based Material)
+    # Create a new material
+    if False:
+        material = bpy.data.materials.new(name=ob_name+"_mat")
+        material.use_nodes = True
+        sphere.data.materials.append(material)
+
+        # Get the principled BSDF node
+        nodes = material.node_tree.nodes
+        links = material.node_tree.links
+
+        # Clear default nodes
+        nodes.clear()
+
+        # Create new nodes
+        bsdf = nodes.new(type='ShaderNodeBsdfPrincipled')
+        output = nodes.new(type='ShaderNodeOutputMaterial')
+
+        # Connect them
+        links.new(bsdf.outputs['BSDF'], output.inputs['Surface'])
+
+        # Add a texture (Image Texture example)
+        texture_node = nodes.new(type='ShaderNodeTexImage')
+        texture_node.image = bpy.data.images.get(texture_path)  # Replace with your image
+
+        # Connect texture to base color
+        links.new(texture_node.outputs['Color'], bsdf.inputs['Base Color'])
+
+        # Optional: Add UV mapping for the texture
+        uv_map = nodes.new(type='ShaderNodeTexCoord')
+        links.new(uv_map.outputs['UV'], texture_node.inputs['Vector'])
+
+
 
     bpy.context.view_layer.objects.active = sphere
     bpy.ops.object.modifier_apply(modifier=bool_mod.name)
@@ -255,38 +298,18 @@ def make_outside_star_pie(ob_name, R, pie_for_boolean):
     else:
         print("No vertices found within the threshold radius.")
 
+    # Create vertex colors
+    bpy.ops.object.mode_set(mode='OBJECT')
 
-    # 4. Add a Texture (using Node-based Material)
-    # Create a new material
-    if False:
-        material = bpy.data.materials.new(name=ob_name+"_mat")
-        material.use_nodes = True
-        sphere.data.materials.append(material)
+    # # To add vertex colors we add a material to the mesh
+    # if verbose_timing: _ = time()
+    if material_name:
+        if material_name in bpy.data.materials:
+             mesh.materials.append(bpy.data.materials[material_name])
+        else:
+             mesh.materials.append(create_material(material_name))#
+    # if verbose_timing: print("Timing, pie, material", time()-_)
 
-        # Get the principled BSDF node
-        nodes = material.node_tree.nodes
-        links = material.node_tree.links
-
-        # Clear default nodes
-        nodes.clear()
-
-        # Create new nodes
-        bsdf = nodes.new(type='ShaderNodeBsdfPrincipled')
-        output = nodes.new(type='ShaderNodeOutputMaterial')
-
-        # Connect them
-        links.new(bsdf.outputs['BSDF'], output.inputs['Surface'])
-
-        # Add a texture (Image Texture example)
-        texture_node = nodes.new(type='ShaderNodeTexImage')
-        texture_node.image = bpy.data.images.get("YourTextureImage.png")  # Replace with your image
-
-        # Connect texture to base color
-        links.new(texture_node.outputs['Color'], bsdf.inputs['Base Color'])
-
-        # Optional: Add UV mapping for the texture
-        uv_map = nodes.new(type='ShaderNodeTexCoord')
-        links.new(uv_map.outputs['UV'], texture_node.inputs['Vector'])
 
     return sphere
 
@@ -466,7 +489,7 @@ def make_vertex_colors(r, v, ob, vertex_colors_name_base="test_v_colors", verbos
         else:
             color_layer = mesh.vertex_colors[vertex_colors_name_base]
 
-    print(ob, ob.data, mesh.vertex_colors)
+    # print(ob, ob.data, mesh.vertex_colors)
 
     list_color = []
     p = mp.plot(rcparams_fixed=False)
@@ -485,7 +508,7 @@ def make_vertex_colors(r, v, ob, vertex_colors_name_base="test_v_colors", verbos
     list_color = np.array(list_color)
     list_color = cmap(norm( list_color ))
     if verbose: print("time list_color", time()-_)
-
+    print("pie", list_color)
     if verbose: _ = time()
     color_layer.data.foreach_set("color", list_color.flatten())
     if verbose: print("time foreach_set", time()-_)
@@ -506,6 +529,76 @@ def make_vertex_colors(r, v, ob, vertex_colors_name_base="test_v_colors", verbos
         # # # Because a vertex can have a different vertex color for for every face it is part of, 
         # # # mesh.vertex_colors[vertex_colors_name].data is indexed with the loop indices. 
 
+# ######################################################
+def make_vertex_colors_surface(ob, eff_temp_color, vertex_colors_name_base="test_surface_colors", verbose=False):
+# ######################################################
+
+    mesh = ob.data
+
+    # Check if there is a vertex_color attribute and 
+    # if yes check if the name already exists
+    if not mesh.vertex_colors:
+        print("  New vertex_colors")
+        mesh.vertex_colors.new(name=vertex_colors_name_base)
+        color_layer = mesh.vertex_colors[vertex_colors_name_base]
+    else:
+        if not vertex_colors_name_base in mesh.vertex_colors:
+            print("  New vertex_colors because diff name")
+            mesh.vertex_colors.new(name=vertex_colors_name_base)
+            color_layer = mesh.vertex_colors[vertex_colors_name_base]
+        else:
+            color_layer = mesh.vertex_colors[vertex_colors_name_base]
+
+    # print(ob, ob.data, mesh.vertex_colors)
+
+    # list_color = []
+    # p = mp.plot(rcparams_fixed=False)
+    # cmap = p.mergeCmaps([plt.cm.Purples_r, plt.cm.hot_r], [[0.0, 0.5], [0.5, 1.0]])
+    # cmin, cmax = 0, 1.  #min(value), max(value)
+    # norm = Normalize(vmin=cmin, vmax=cmax)
+
+    # if verbose: _ = time()
+    # # For each loop index of the vertex we get the radial indices into the MESA data 
+    # # We saved these indices when we made the geometry and mesh and stored it in the 
+    # # attribute vert_col_radial_index.
+    # list_color = np.array([[0.5, 0., 0., 1.0] \
+    #         for poly in mesh.polygons\
+    #         for vert_i_poly, vert_i_mesh in enumerate(poly.vertices)])
+    
+    # We loop over all the polygons
+    for poly in mesh.polygons:
+        # We get the polygon index and the corresponding mesh index
+        for vert_i_poly, vert_i_mesh in enumerate(poly.vertices):  
+            # We get the loop index from the polygon index   
+            vert_i_loop = poly.loop_indices[vert_i_poly]
+            # We set the color for the vertex
+            color_layer.data[vert_i_loop].color = eff_temp_color#[1., 1., 0., 1.0]#vert_colors[vert_i_loop]
+            # A print statement to see how the indices relate to each other 
+            print(list(color_layer.data[vert_i_loop].color), vert_i_poly, vert_i_mesh, vert_i_loop)
+
+    # list_color = np.array(list_color)
+    # list_color = cmap(norm( list_color ))
+    # if verbose: print("time list_color", time()-_)
+    # print("siurface", list_color)
+    # if verbose: _ = time()
+    # color_layer.data.foreach_set("color", list_color.flatten())
+    # if verbose: print("time foreach_set", time()-_)
+
+
+        # # # poly.vertices: length is the amount of vertices in the polygon
+        # # #                the values of the elements are the indeces to the vertices in the mesh
+        # # # poly.loop_indices:    - length is also the amount of vertices in the polygon
+        # # #                       - the values of the elements is an index that takes every vertex in a polygon as one unit
+        # # #                         This is useful because every vertex can have a different color in each polygon that it is part of.
+        # # #                         Thus color_layer.data can be indexed using the values in loop_index.
+
+        # # # Every vertex has two indices associated with it. A vertex has one index which is unique for 
+        # # # the vertex and is used to get the vertex from the mesh (for example to get coordinates of a vertex: 
+        # # # bpy.data.meshes['Cube'].vertices.data.vertices[0].co). 
+        # # # A vertex can have (multi) indices of a second kind, often called the loop index. The vertex can be part
+        # # # of multiple faces (often called polygons) and for every face it is part of it has a different loop indices.
+        # # # Because a vertex can have a different vertex color for for every face it is part of, 
+        # # # mesh.vertex_colors[vertex_colors_name].data is indexed with the loop indices. 
 
 
 # ######################################################
