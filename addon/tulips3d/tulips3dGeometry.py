@@ -13,8 +13,34 @@ import math
 import sys
 from time import time
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, to_rgb
 from matplotlib.colors import Normalize, LogNorm
 from scipy.interpolate import interp1d
+
+# For cmaps:
+# import cmasher as cmr
+CMAP_BASE = ListedColormap([ "#40C4FF",     # dark blue - h1
+                             "#64B5F6",     # lighter dark blue - he3
+                             "#2962FF",     # light blue - he4
+                             "#C6FF00",     # lime - c12
+                             "#18FFFF",     # cyan - n14
+                             "#00C853",     # dark green - o16
+                             "#69F0AE",     # light green - ne20
+                             "#8D6E63",     # light brown - mg24
+                             "#5D4037",     # brown - si28
+                             "#BDBDBD",     # grey - s32
+                             "#2f0596",     # ar36
+                             "#4903a0",     # ca40
+                             "#6100a7",     # ti47
+                             "#8707a6",     # cr48
+                             "#ba3388",     # cr56
+                             "#de6164",     # fe52
+                             "#e66c5c",     # fe54
+                             "#ed7953",     # fe56
+                             "#feb72d",     # ni56
+                             ])
+
+CMAP_RGBA = [(0.25098039215686274, 0.7686274509803922, 1.0, 1.0), (0.39215686274509803, 0.7098039215686275, 0.9647058823529412, 1.0), (0.1607843137254902, 0.3843137254901961, 1.0, 1.0), (0.7764705882352941, 1.0, 0.0, 1.0), (0.09411764705882353, 1.0, 1.0, 1.0), (0.0, 0.7843137254901961, 0.3254901960784314, 1.0), (0.4117647058823529, 0.9411764705882353, 0.6823529411764706, 1.0), (0.5529411764705883, 0.43137254901960786, 0.38823529411764707, 1.0), (0.36470588235294116, 0.25098039215686274, 0.21568627450980393, 1.0), (0.7411764705882353, 0.7411764705882353, 0.7411764705882353, 1.0), (0.1843137254901961, 0.0196078431372549, 0.5882352941176471, 1.0), (0.28627450980392155, 0.011764705882352941, 0.6274509803921569, 1.0), (0.3803921568627451, 0.0, 0.6549019607843137, 1.0), (0.5294117647058824, 0.027450980392156862, 0.6509803921568628, 1.0), (0.7294117647058823, 0.2, 0.5333333333333333, 1.0), (0.8705882352941177, 0.3803921568627451, 0.39215686274509803, 1.0), (0.9019607843137255, 0.4235294117647059, 0.3607843137254902, 1.0), (0.9294117647058824, 0.4745098039215686, 0.3254901960784314, 1.0), (0.996078431372549, 0.7176470588235294, 0.17647058823529413, 1.0)]
 
 # N?EED TO PULL THIS OUT!
 import mesaPlot as mp
@@ -93,7 +119,7 @@ def make_pie_side(ob_name, R, nr_R, nr_Th, verbose_timing=False):
     # MAKE THE MESH AND VERTS
     if verbose_timing: _ = time()
     verts, edges_radial, edges_th = [], [], []
-    vert_col_radial_index = []
+    vert_col_radial_index, vert_col_th_index = [], []
     vert_index = 0
     vPh = 0.0
 
@@ -106,6 +132,7 @@ def make_pie_side(ob_name, R, nr_R, nr_Th, verbose_timing=False):
             # Save the radial index which we need later
             # to set the vertex colors
             vert_col_radial_index.append(iR)
+            vert_col_th_index.append(iTh)
 
             if iR != 0 and iR != len(R):
                 edges_radial.append( ( vert_index - 1, vert_index ) )
@@ -170,6 +197,11 @@ def make_pie_side(ob_name, R, nr_R, nr_Th, verbose_timing=False):
     # vert_col_radial_index into an attribute
     attribute = mesh.attributes.new(name="vert_col_radial_index", type="INT", domain="POINT")
     attribute_values = [vert_col_radial_index[i] for i in range(len(mesh.vertices))]
+    attribute.data.foreach_set("value", attribute_values)
+
+    # Th index in order to later figure it out
+    attribute = mesh.attributes.new(name="vert_col_th_index", type="INT", domain="POINT")
+    attribute_values = [vert_col_th_index[i] for i in range(len(mesh.vertices))]
     attribute.data.foreach_set("value", attribute_values)
 
     # Fill_holes:
@@ -469,6 +501,73 @@ def make_star_pie_for_boolean(ob_name, R, nr_R, nr_Th, phi_start, phi_end, verbo
 
     return ob
 
+
+
+# ######################################################
+def make_chem_vertex_colors(r, v, ob, labels, nr_Th, vertex_colors_name_base="test_v_colors", verbose=False):
+# ######################################################
+
+    mesh = ob.data
+
+    # Check if there is a vertex_color attribute and 
+    # if yes check if the name already exists
+    if not mesh.vertex_colors:
+        print("  New vertex_colors")
+        mesh.vertex_colors.new(name=vertex_colors_name_base)
+        color_layer = mesh.vertex_colors[vertex_colors_name_base]
+    else:
+        if not vertex_colors_name_base in mesh.vertex_colors:
+            print("  New vertex_colors because diff name")
+            mesh.vertex_colors.new(name=vertex_colors_name_base)
+            color_layer = mesh.vertex_colors[vertex_colors_name_base]
+        else:
+            color_layer = mesh.vertex_colors[vertex_colors_name_base]
+
+    # Start walking over the polygons and loop indices
+    list_color = []
+
+    # cmap = CMAP_BASE
+    # CMAP_DEFAULT = cmr.get_sub_cmap("cmr.pride", 0, 0.8)
+    # cmap = plt.get_cmap(CMAP_DEFAULT, len(labels))
+
+
+    for poly in mesh.polygons:
+        for vert_i_poly, vert_i_mesh in enumerate(poly.vertices):
+            r_index = mesh.attributes['vert_col_radial_index'].data[vert_i_mesh].value
+            th_index = mesh.attributes['vert_col_th_index'].data[vert_i_mesh].value
+            
+            # tot = np.sum(v[:, r_index])
+            hydrogen_profile = v[labels.index('h1'), r_index]
+            helium_profile = v[labels.index('he3'), r_index]
+
+            abundances = np.array([i for i in v[:, r_index]])*nr_Th
+
+            print("ABUND STUFF", f"{len(abundances)=} {len(CMAP_RGBA)=}")
+            abundances_cummulative = np.array([np.sum(abundances[0:i+1]) for i in range(len(abundances))])
+            print("ABUND STUFF", f"{len(abundances_cummulative)=}")
+            idx = np.searchsorted(abundances_cummulative, th_index)
+            print("ABUND STUFF", f"{idx=}")
+            vert_color = CMAP_RGBA[idx]
+
+
+
+            # if th_index < hydrogen_profile*nr_Th:#hydrogen_profile[r_index]*nr_Th:
+            #     vert_color = CMAP_RGBA[0]#[1, 0, 0, 1] #Hydrogen
+            # elif (hydrogen_profile*nr_Th < th_index) and \
+            #     (th_index < (hydrogen_profile+helium_profile)*nr_Th):
+            # # elif hydrogen_profile[r_index]*nr_Th < th_index < (hydrogen_profile[r_index]+helium_profile[r_index])*nr_Th:
+            #     vert_color = CMAP_RGBA[1]#[0, 1, 0, 1] #Helium
+            # else:
+            #     vert_color = CMAP_RGBA[-1]#[0, 0, 1, 1] #Rest
+
+
+            list_color.append(
+                vert_color
+                )
+    color_layer.data.foreach_set("color", np.array(list_color).flatten())
+
+
+
 # ######################################################
 def make_vertex_colors(r, v, ob, vertex_colors_name_base="test_v_colors", verbose=False):
 # ######################################################
@@ -574,7 +673,7 @@ def make_vertex_colors_surface(ob, eff_temp_color, vertex_colors_name_base="test
             # We set the color for the vertex
             color_layer.data[vert_i_loop].color = eff_temp_color#[1., 1., 0., 1.0]#vert_colors[vert_i_loop]
             # A print statement to see how the indices relate to each other 
-            print(list(color_layer.data[vert_i_loop].color), vert_i_poly, vert_i_mesh, vert_i_loop)
+            # print(list(color_layer.data[vert_i_loop].color), vert_i_poly, vert_i_mesh, vert_i_loop)
 
     # list_color = np.array(list_color)
     # list_color = cmap(norm( list_color ))

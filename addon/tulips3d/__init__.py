@@ -58,13 +58,17 @@ key_blender_ob_data_dict = "MESA_data_dict"
 
 # Keys of the dict coming from the DataPrepTulips3D
 key_DataPrepTulips3D_prof_labels = "prof_labels"
+key_DataPrepTulips3D_chem_elem_labels = "chem_elem_labels"
 key_DataPrepTulips3D_r_resolution = "r_resolution"
 key_DataPrepTulips3D_t_resolution = "t_resolution"
+
+key_DataPrepTulips3D_nr_theta_points = "nr_Th"
 
 # The data_array (given by DP.load_from_pickle) will contain 
 # the "data_prof_t_r" key. It contains the MESA data in the 
 # resolution (prof_labels, t_resolution, r_resolution)
 key_DataPrepTulips3D_data_prof_t_r = "data_prof_t_r"
+key_DataPrepTulips3D_data_chem_t_r = "data_chem_t_r"
 key_DataPrepTulips3D_data_t = "data_t"
 key_DataPrepTulips3D_data_t_Teff = "logTeff"
 
@@ -98,6 +102,10 @@ class OBJECT_OT_add_tulips3d_geo(bpy.types.Operator):
             print("MESA data keys avaliable: ", d.keys())
             print("MESA data profiles avaliable: ", \
                 d[key_DataPrepTulips3D_prof_labels])
+
+            #d[key_DataPrepTulips3D_prof_labels].append("Chem")
+            # Store the number of theta points used to create the object
+            d[key_DataPrepTulips3D_nr_theta_points] = settings.mesh_th_nr_steps+1
 
             ob = tulips3dGeometry.make_star_pie(\
                 ob_name=settings.ob_name, \
@@ -166,110 +174,79 @@ def update_profile(ob):
             elif child["pie_type"] == "outer_sph":
                 outer_sph = child
 
-        # GET THE DATA AND FORMAT
-        # _data = dict(ob[key_ob_DataPrepTulips3D_data])
+        # Cast and reshape the data into a proper numpy array
         _profile_data = np.array(empty[key_DataPrepTulips3D_data_prof_t_r])
         _profile_data = _profile_data.reshape(\
             len(empty[key_DataPrepTulips3D_prof_labels]),\
             empty[key_DataPrepTulips3D_t_resolution],\
             empty[key_DataPrepTulips3D_r_resolution]\
             )
-        
+
+        _chem_data = np.array(empty[key_DataPrepTulips3D_data_chem_t_r])
+        _chem_data = _chem_data.reshape(\
+            len(empty[key_DataPrepTulips3D_chem_elem_labels]),\
+            empty[key_DataPrepTulips3D_t_resolution],\
+            empty[key_DataPrepTulips3D_r_resolution]\
+            )
+
+        # Get the profile labels as a list        
         _profile_labels = list(empty[key_DataPrepTulips3D_prof_labels])
-        _profile_index = _profile_labels.index(empty[key_ob_active_data_label])
+        # Get the current profile label
+        if empty[key_ob_active_data_label] == "Chem":   
 
-        v = _profile_data[_profile_index, empty[key_ob_active_time_index], :]
+            _profile_index = 0 # THIS IS TEMPORARY!!!!!
+        else:
+            _profile_index = _profile_labels.index(empty[key_ob_active_data_label])
 
+       
+        # Get the r_max data and cast/reshape into np array
         _data_r_max = np.array(empty[key_DataPrepTulips3D_data_r_max]).reshape(\
             len(empty[key_DataPrepTulips3D_prof_labels]),\
             empty[key_DataPrepTulips3D_t_resolution])
+        # Get the r_max for the current time index
         r_max = _data_r_max[_profile_index, empty[key_ob_active_time_index]]
+        # Generate an r array using the given resolution
         r = np.linspace(0., r_max, empty[key_DataPrepTulips3D_r_resolution])
 
-            # Update the outer shell of the star
+        # Update the outer shell of the star
+        # First get the data that only depens on time
         _profile_data_t = empty[key_DataPrepTulips3D_data_t]
+        # Then fetch the logTeff data
         arrTeff = _profile_data_t[key_DataPrepTulips3D_data_t_Teff]
-        # for idx, item in enumerate(_profile_data_t):
-        #     print(_profile_data_t)
-        #     print(item.name)
-        #     if item.name == target_name:  # or whatever matching criterion
-        #         Teff = item[key_ob_active_time_index]
-        #         break
-        # Teff = _profile_data_t[key_DataPrepTulips3D_data_t_Teff][key_ob_active_time_index]
         logTeff = np.array(arrTeff)[empty[key_ob_active_time_index]]
-
-        # print( colormodels.irgb_string_from_xyz(blackbody.blackbody_color(Teff)) )
-        
-        print("TEFFFFF ----------")
-        print(logTeff)
-        print(blackbody.blackbody_color(10**logTeff))
-        print(colormodels.irgb_string_from_xyz(blackbody.blackbody_color(10**logTeff)))
+        # And make a colour of the logTeff
         eff_temp_color = [i/255 for i in colormodels.irgb_from_xyz(blackbody.blackbody_color(10**logTeff))]
-        print(eff_temp_color)
+        # Add the alpha channel
         eff_temp_color = eff_temp_color + [1.]
-        print(eff_temp_color)
 
-        # eff_temp_color=colormodels.irgb_string_from_xyz(blackbody.blackbody_color(10**logTeff))#[1., 0., 1., 1.]
+        # Update the surface colors
         tulips3dGeometry.make_vertex_colors_surface(outer_sph, eff_temp_color, vertex_colors_name_base="test_surface_colors")
 
-        
-
-
-        # Update the pie slices
+        # Update the pie slices with the data and rescale
         for pie_ob in pie_objects:
+            if empty[key_ob_active_data_label] == "Chem":
+                v = _chem_data[:, empty[key_ob_active_time_index], :]
+                tulips3dGeometry.make_chem_vertex_colors(\
+                            np.array(r), np.array(v), pie_ob, labels=empty[key_DataPrepTulips3D_chem_elem_labels], nr_Th=empty[key_DataPrepTulips3D_nr_theta_points],\
+                            vertex_colors_name_base = "v_col_active", \
+                            verbose=False\
+                            )
+            else:
+                # Get the data values corresponding to the current profile and time index
+                v = _profile_data[_profile_index, empty[key_ob_active_time_index], :]
 
+                tulips3dGeometry.make_vertex_colors(\
+                            np.array(r), np.array(v), pie_ob, \
+                            vertex_colors_name_base = "v_col_active", \
+                            verbose=False\
+                            )
 
-            tulips3dGeometry.make_vertex_colors(\
-                        np.array(r), np.array(v), pie_ob, \
-                        vertex_colors_name_base = "v_col_active", \
-                        verbose=False\
-                        )
 
             r_max_0 = _data_r_max[_profile_index, 0]
 
             empty.scale = [1.*r_max/r_max_0 for i in range(3)]
 
 
-# def update_profile(ob):
-#     print("  Updating profile: ", ob.name)
-#     # _data = dict(ob[key_ob_DataPrepTulips3D_data])
-#     _profile_data = np.array(ob[key_DataPrepTulips3D_data_prof_t_r])
-#     _profile_data = _profile_data.reshape(\
-#         len(ob[key_DataPrepTulips3D_prof_labels]),\
-#         ob[key_DataPrepTulips3D_t_resolution],\
-#         ob[key_DataPrepTulips3D_r_resolution]\
-#         )
-    
-#     _profile_labels = list(ob[key_DataPrepTulips3D_prof_labels])
-#     print(f"   {ob[key_ob_active_data_label]}")
-#     _profile_index = _profile_labels.index(ob[key_ob_active_data_label])
-#     #key_ob_active_time_index
-
-#     print("    ", _profile_index, ob[key_ob_active_data_label])
-
-#     v = _profile_data[_profile_index, ob[key_ob_active_time_index], :]
-
-#     _data_r_max = np.array(ob[key_DataPrepTulips3D_data_r_max]).reshape(\
-#         len(ob[key_DataPrepTulips3D_prof_labels]),\
-#         ob[key_DataPrepTulips3D_t_resolution])
-#     r_max = _data_r_max[_profile_index, ob[key_ob_active_time_index]]
-#     r = np.linspace(0., r_max, ob[key_DataPrepTulips3D_r_resolution])
-
-#     print("    ", ob)
-#     print("    ", v[0:5])
-
-
-#     tulips3dGeometry.make_vertex_colors(\
-#                 np.array(r), np.array(v), ob, \
-#                 vertex_colors_name_base = "v_col_active", \
-#                 verbose=False\
-#                 )
-
-#     r_max_0 = _data_r_max[_profile_index, 0]
-
-#     ob.scale = [1.*r_max/r_max_0 for i in range(3)]
-
-#     print("")
 
 def frame_change(scene):
     print("frame change")
@@ -319,7 +296,7 @@ def mesaDataProfEnum_callback(scene, context):
         if "pie_type" in ob.keys():
             if ob['pie_type'] != "empty":
                 ob = ob.parent
-            for k in ob[key_DataPrepTulips3D_prof_labels]:
+            for k in list(ob[key_DataPrepTulips3D_prof_labels])+["Chem"]:
                 items.append((k, k, ""))
         
 
