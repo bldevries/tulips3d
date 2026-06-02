@@ -4,16 +4,34 @@
 Go to www.blender.org and download and install  Blender (4.5+)
 
 ## Install DataPrepTulips3D in Blender
-Clone or download our repository: https://github.com/bldevries/DataPrepTulips3D
+Install our repository: https://github.com/bldevries/DataPrepTulips3D
+Follow the installation and follow the tutorial to run and obtain a pickled python dict you can use in the Blender addon. See here: https://github.com/bldevries/DataPrepTulips3D/blob/main/notebooks/Tutorial1_try_it_out.ipynb
+<!--
+## Creating your own DataPrepTulips3D file
+You probably want to install DataPrepTulips3D in a virtual env. You can then run the following commands to generate a pickle file based on your own mesa files:
 
+```python
+import DataPrepTulips3D as DP
+d_none = DP.loadMesaData(mesa_LOGS_directory = "<your dir>/single_11Msun/LOGS", \
+                    t_resolution = 500, r_resolution = 100,\
+                    time_scale_type="log_to_end",\
+                    filename_history = "history.data")
+
+DP.save_to_pickle(d_none, "<your dir>/single_11Msun.pkl")
+```
+-->
+
+<!--
 The Blender Python executable can be found in the Blender install. For example on Mac it could be found here, depending on where you installed Blender:
 ```/Applications/Blender.app/Contents/Resources/5.0/python/bin/python3.11```
 
 Now you can install DataPrepTulips3D for Blender using:
 ```/Applications/Blender.app/Contents/Resources/5.0/python/bin/python3.11 -m pip install -e <..>/DataPrepTulips3D/.```
-
+-->
 ## Install mesaPlot for Blender:
-This is a bit quicker, you can just run:
+Likely this will change, but for now you must have mesaPlot installed for the Python package coming with Blender. The Blender Python executable can be found in the Blender install. For example on Mac it could be found here, depending on where you installed Blender:
+```/Applications/Blender.app/Contents/Resources/5.0/python/bin/python3.11```
+Now you can just run to install mesaPlot in the Blender Python API:
 ```/Applications/Blender.app/Contents/Resources/5.0/python/bin/python3.11 -m pip install mesaPlot```
 
 ## Start Blender from the command-line (optional and Mac only):
@@ -37,26 +55,12 @@ The data loading UI can be found in the "Scene" tab in the "Properties" window. 
 
 To manipulate the selected star object, there is a sidebar UI. You can make this appear through menus by going to View > Sidebar. You will see a sidebar appear in the 3D Viewport that has some tabs of which the last is named "Tulips3D". If you have created an object and selected it, here you can set some data properties and things.
 
-## Creating your own DataPrepTulips3D file
-You probably want to install DataPrepTulips3D in a virtual env. You can then run the following commands to generate a pickle file based on your own mesa files:
-
-```python
-import DataPrepTulips3D as DP
-d_none = DP.loadMesaData(mesa_LOGS_directory = "<your dir>/single_11Msun/LOGS", \
-                    t_resolution = 500, r_resolution = 100,\
-                    time_scale_type="log_to_end",\
-                    filename_history = "history.data")
-
-DP.save_to_pickle(d_none, "<your dir>/single_11Msun.pkl")
-```
-
 ## Load a DataPrepTulips3D file
-Now you can go into Blender, go to the Properties window and the Scene tab and find the Tulips3D section of the UI. Press the file Icon to find and select the "binary.pkl" you just downloaded. The click "Create Tulips3D Object" to make an object. It should appear in your 3D View. To see some colours you might need to set Viewport Shading to Rendered. You typically do this by selecting this render mode in the top right of the 3D Viewport. It is one of the small icons of a ball. 
+Now you can go into Blender, go to the Properties window and the Scene tab and find the Tulips3D section of the UI. Press the file Icon to find and select the pickle file you made with DataPrepTulips3D. The click "Create Tulips3D Object" to make an object. It should appear in your 3D View. To see some colours you might need to set Viewport Shading to Rendered. You typically do this by selecting this render mode in the top right of the 3D Viewport. It is one of the small icons of a ball. 
 
 Now you can play with some of the data using the sidebar. If the object is selected you can choose between different MESA Profiles. You can also set the time index to select different times. 
 
-The frames in the animation are linked to the time index of the mesa profiles. So when you select a different frame in the Timeline (often visible below the 3D Viewport), the model should update to a different time index. This is all still very slow and might occasionally crash Blender, so take care :) In the sidebar you can choose how the frame number is mapped to the time index.
-
+The frames in the animation are linked to the time index of the mesa profiles. So when you select a different frame in the Timeline (often visible below the 3D Viewport), the model should update to a different time index. 
 
 Now you can try this out in Blender :)
 
