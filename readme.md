@@ -32,7 +32,7 @@ An animation of showing the star's interior properties.
 
 Animation of how the different interior properties of the star change over time.
 <div align="center">
-<img src="images/low_chem_v1.gif" alt="" width="720" height="auto">
+<img src="images/low_chem_v2.gif" alt="" width="720" height="auto">
 </div>
 
 <!-- 
