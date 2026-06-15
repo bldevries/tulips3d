@@ -31,4 +31,4 @@ A rendered animation of three internal properties of the star as function of tim
 </div>
 
 ## Installation
-For the moment, use these instructions to install and test Tulips3D: tutorials/a_first_installation_and_test.md
+For the moment, use [these](tutorials/a_first_installation_and_test.md) instructions to install and test Tulips3D.
