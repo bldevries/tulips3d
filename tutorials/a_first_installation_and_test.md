@@ -1,4 +1,4 @@
-# Installation instructions 24 Nov 2025
+# Installation instructions
 
 ## Install Blender (4.5+)
 Go to www.blender.org and download and install  Blender (4.5+)
@@ -58,7 +58,7 @@ To manipulate the selected star object, there is a sidebar UI. You can make this
 ## Load a DataPrepTulips3D file
 Now you can go into Blender, go to the Properties window and the Scene tab and find the Tulips3D section of the UI. Press the file Icon to find and select the pickle file you made with DataPrepTulips3D. The click "Create Tulips3D Object" to make an object. It should appear in your 3D View. To see some colours you might need to set Viewport Shading to Rendered. You typically do this by selecting this render mode in the top right of the 3D Viewport. It is one of the small icons of a ball. 
 
-Now you can play with some of the data using the sidebar. If the object is selected you can choose between different MESA Profiles. You can also set the time index to select different times. 
+Now you can play with some of the data using the sidebar. If the object is selected (select it in the outlines, so you select the parent of the set of objects) you can choose between different MESA Profiles. You can also set the time index to select different times. 
 
 The frames in the animation are linked to the time index of the mesa profiles. So when you select a different frame in the Timeline (often visible below the 3D Viewport), the model should update to a different time index. 
 

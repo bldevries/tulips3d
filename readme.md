@@ -30,3 +30,5 @@ A rendered animation of three internal properties of the star as function of tim
 <img src="images/simple_test_animation.gif" alt="" width="720" height="auto">
 </div>
 
+## Installation
+For the moment, use these instructions to install and test Tulips3D: tutorials/a_first_installation_and_test.md
