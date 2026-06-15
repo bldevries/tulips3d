@@ -40,13 +40,16 @@ CMAP_BASE = ListedColormap([ "#40C4FF",     # dark blue - h1
                              "#feb72d",     # ni56
                              ])
 
-CMAP_RGBA = [(0.25098039215686274, 0.7686274509803922, 1.0, 1.0), (0.39215686274509803, 0.7098039215686275, 0.9647058823529412, 1.0), (0.1607843137254902, 0.3843137254901961, 1.0, 1.0), (0.7764705882352941, 1.0, 0.0, 1.0), (0.09411764705882353, 1.0, 1.0, 1.0), (0.0, 0.7843137254901961, 0.3254901960784314, 1.0), (0.4117647058823529, 0.9411764705882353, 0.6823529411764706, 1.0), (0.5529411764705883, 0.43137254901960786, 0.38823529411764707, 1.0), (0.36470588235294116, 0.25098039215686274, 0.21568627450980393, 1.0), (0.7411764705882353, 0.7411764705882353, 0.7411764705882353, 1.0), (0.1843137254901961, 0.0196078431372549, 0.5882352941176471, 1.0), (0.28627450980392155, 0.011764705882352941, 0.6274509803921569, 1.0), (0.3803921568627451, 0.0, 0.6549019607843137, 1.0), (0.5294117647058824, 0.027450980392156862, 0.6509803921568628, 1.0), (0.7294117647058823, 0.2, 0.5333333333333333, 1.0), (0.8705882352941177, 0.3803921568627451, 0.39215686274509803, 1.0), (0.9019607843137255, 0.4235294117647059, 0.3607843137254902, 1.0), (0.9294117647058824, 0.4745098039215686, 0.3254901960784314, 1.0), (0.996078431372549, 0.7176470588235294, 0.17647058823529413, 1.0)]
+CMAP_RGBA = [(0.25098039215686274, 0.7686274509803922, 1.0, 1.0), (0.39215686274509803, 0.7098039215686275, 0.9647058823529412, 1.0), (0.1607843137254902, 0.3843137254901961, 1.0, 1.0), \
+            (0.7764705882352941, 1.0, 0.0, 1.0), (0.09411764705882353, 1.0, 1.0, 1.0), (0.0, 0.7843137254901961, 0.3254901960784314, 1.0), (0.4117647058823529, 0.9411764705882353, 0.6823529411764706, 1.0), \
+            (0.5529411764705883, 0.43137254901960786, 0.38823529411764707, 1.0), (0.36470588235294116, 0.25098039215686274, 0.21568627450980393, 1.0), (0.7411764705882353, 0.7411764705882353, 0.7411764705882353, 1.0), \
+            (0.1843137254901961, 0.0196078431372549, 0.5882352941176471, 1.0), (0.28627450980392155, 0.011764705882352941, 0.6274509803921569, 1.0), (0.3803921568627451, 0.0, 0.6549019607843137, 1.0), \
+            (0.5294117647058824, 0.027450980392156862, 0.6509803921568628, 1.0), (0.7294117647058823, 0.2, 0.5333333333333333, 1.0), (0.8705882352941177, 0.3803921568627451, 0.39215686274509803, 1.0), \
+            (0.9019607843137255, 0.4235294117647059, 0.3607843137254902, 1.0), (0.9294117647058824, 0.4745098039215686, 0.3254901960784314, 1.0), (0.996078431372549, 0.7176470588235294, 0.17647058823529413, 1.0)]
 
-# N?EED TO PULL THIS OUT!
 import mesaPlot as mp
 
-
-def make_star_pie(ob_name, R, nr_R, nr_Th, texture_path, phi_start = 0.0, phi_end=30.0, verbose_timing=False):#, \settings, 
+def make_star_pie(ob_name, R, nr_R, nr_Th, texture_path, phi_start = 0.0, phi_step=30.0, verbose_timing=False):#, \settings, 
     '''Make the geometry for a pie cut from the star'''
 
     #phi_start, phi_end = 0., 2*np.pi/pie_fraction
@@ -57,9 +60,10 @@ def make_star_pie(ob_name, R, nr_R, nr_Th, texture_path, phi_start = 0.0, phi_en
     empty.name = ob_name
     empty["pie_type"] = "empty"
 
-    print("** Making bool cut!", phi_start, phi_end)
+    print("** Making bool cut!", phi_start, phi_step)
     bool_cut = make_star_pie_for_boolean(ob_name+"bool_cut", R, nr_R, \
-                                        nr_Th, -phi_start, -phi_end,)
+                                        nr_Th, -0, -phi_step,)
+    #nr_Th, -phi_start, -phi_step,)
     bool_cut["pie_type"] = "bool_cut"
 
     print("** Making the outer sphere")
@@ -69,12 +73,12 @@ def make_star_pie(ob_name, R, nr_R, nr_Th, texture_path, phi_start = 0.0, phi_en
 
     print("** Making side 1!")
     pie1 = make_pie_side(ob_name+"_pie1", R, nr_R, nr_Th, verbose_timing=verbose_timing)
-    pie1.rotation_euler[2] = phi_start
+    pie1.rotation_euler[2] = 0#phi_start
     pie1["pie_type"] = "pie"
 
     print("** Making side 2")
     pie2 = make_pie_side(ob_name+"_pie2", R, nr_R, nr_Th, verbose_timing=verbose_timing)
-    pie2.rotation_euler[2] = phi_start + phi_end
+    pie2.rotation_euler[2] = 0 + phi_step #phi_start + phi_step
     pie2["pie_type"] = "pie"
 
     empty.select_set(True)
@@ -84,6 +88,8 @@ def make_star_pie(ob_name, R, nr_R, nr_Th, texture_path, phi_start = 0.0, phi_en
     bpy.context.view_layer.objects.active = empty
     bpy.ops.object.parent_set(type='OBJECT', keep_transform=False)
     bpy.ops.object.select_all(action='DESELECT')
+
+    empty.rotation_euler[2] = phi_start
 
     # Set bool obj to invisible
     bool_cut.hide_viewport = True
@@ -502,9 +508,53 @@ def make_star_pie_for_boolean(ob_name, R, nr_R, nr_Th, phi_start, phi_end, verbo
     return ob
 
 
-
 # ######################################################
 def make_chem_vertex_colors(r, v, ob, labels, nr_Th, vertex_colors_name_base="test_v_colors", verbose=False):
+# ######################################################
+    # v[chem.prof.label, r]
+
+    mesh = ob.data
+
+    # Check if there is a vertex_color attribute and 
+    # if yes check if the name already exists
+    if not mesh.vertex_colors:
+        print("  New vertex_colors")
+        mesh.vertex_colors.new(name=vertex_colors_name_base)
+        color_layer = mesh.vertex_colors[vertex_colors_name_base]
+    else:
+        if not vertex_colors_name_base in mesh.vertex_colors:
+            print("  New vertex_colors because diff name")
+            mesh.vertex_colors.new(name=vertex_colors_name_base)
+            color_layer = mesh.vertex_colors[vertex_colors_name_base]
+        else:
+            color_layer = mesh.vertex_colors[vertex_colors_name_base]
+
+    # Start walking over the polygons and loop indices
+    list_color = []
+
+    # cmap = CMAP_BASE
+    # CMAP_DEFAULT = cmr.get_sub_cmap("cmr.pride", 0, 0.8)
+    # cmap = plt.get_cmap(CMAP_DEFAULT, len(labels))
+
+    _ = time()
+    for poly in mesh.polygons:
+        for vert_i_poly, vert_i_mesh in enumerate(poly.vertices):
+            r_index = mesh.attributes['vert_col_radial_index'].data[vert_i_mesh].value
+            th_index = mesh.attributes['vert_col_th_index'].data[vert_i_mesh].value
+
+            idx = np.searchsorted(v[:, r_index], th_index)
+            vert_color = CMAP_RGBA[idx]
+            list_color.append(vert_color)
+    
+    
+    print("make_chem_vertex_colors, version NEW, time: ", time()-_)
+
+
+    color_layer.data.foreach_set("color", np.array(list_color).flatten())
+
+
+# ######################################################
+def OLD_make_chem_vertex_colors(r, v, ob, labels, nr_Th, vertex_colors_name_base="test_v_colors", verbose=False):
 # ######################################################
 
     mesh = ob.data
@@ -530,40 +580,70 @@ def make_chem_vertex_colors(r, v, ob, labels, nr_Th, vertex_colors_name_base="te
     # CMAP_DEFAULT = cmr.get_sub_cmap("cmr.pride", 0, 0.8)
     # cmap = plt.get_cmap(CMAP_DEFAULT, len(labels))
 
-
+    _ = time()
+    # This is faster than a full list comprehension!
     for poly in mesh.polygons:
         for vert_i_poly, vert_i_mesh in enumerate(poly.vertices):
             r_index = mesh.attributes['vert_col_radial_index'].data[vert_i_mesh].value
             th_index = mesh.attributes['vert_col_th_index'].data[vert_i_mesh].value
             
             # tot = np.sum(v[:, r_index])
-            hydrogen_profile = v[labels.index('h1'), r_index]
-            helium_profile = v[labels.index('he3'), r_index]
+            # hydrogen_profile = v[labels.index('h1'), r_index]
+            # helium_profile = v[labels.index('he3'), r_index]
 
+            _2 = time()
             abundances = np.array([i for i in v[:, r_index]])*nr_Th
+            print("  1", time()-_2)
 
-            print("ABUND STUFF", f"{len(abundances)=} {len(CMAP_RGBA)=}")
+            _2 = time()
             abundances_cummulative = np.array([np.sum(abundances[0:i+1]) for i in range(len(abundances))])
-            print("ABUND STUFF", f"{len(abundances_cummulative)=}")
+            print("  2", time()-_2)
+
+            _2 = time()
             idx = np.searchsorted(abundances_cummulative, th_index)
-            print("ABUND STUFF", f"{idx=}")
+            print("  3", time()-_2)
+
             vert_color = CMAP_RGBA[idx]
-
-
-
-            # if th_index < hydrogen_profile*nr_Th:#hydrogen_profile[r_index]*nr_Th:
-            #     vert_color = CMAP_RGBA[0]#[1, 0, 0, 1] #Hydrogen
-            # elif (hydrogen_profile*nr_Th < th_index) and \
-            #     (th_index < (hydrogen_profile+helium_profile)*nr_Th):
-            # # elif hydrogen_profile[r_index]*nr_Th < th_index < (hydrogen_profile[r_index]+helium_profile[r_index])*nr_Th:
-            #     vert_color = CMAP_RGBA[1]#[0, 1, 0, 1] #Helium
-            # else:
-            #     vert_color = CMAP_RGBA[-1]#[0, 0, 1, 1] #Rest
-
 
             list_color.append(
                 vert_color
                 )
+    
+    print("make_chem_vertex_colors, version old, time: ", time()-_)
+
+
+
+    _ = time()
+    for poly in mesh.polygons:
+        for vert_i_poly, vert_i_mesh in enumerate(poly.vertices):
+            r_index = mesh.attributes['vert_col_radial_index'].data[vert_i_mesh].value
+            th_index = mesh.attributes['vert_col_th_index'].data[vert_i_mesh].value
+            
+            # tot = np.sum(v[:, r_index])
+            # hydrogen_profile = v[labels.index('h1'), r_index]
+            # helium_profile = v[labels.index('he3'), r_index]
+
+            # _2 = time()
+            # abundances = np.array([i for i in v[:, r_index]])*nr_Th
+            # print("  1", time()-_2)
+
+            # _2 = time()
+            # abundances_cummulative = np.array([np.sum(abundances[0:i+1, r_index]) for i in range(len(abundances[:, r_index]))])
+            # print("  2", time()-_2)
+
+            # _2 = time()
+            idx = np.searchsorted(ob["abundances_cummulative"][r_index], th_index)
+            # print("  3", time()-_2)
+
+            vert_color = CMAP_RGBA[idx]
+
+            list_color.append(
+                vert_color
+                )
+    
+    print("make_chem_vertex_colors, version NEW, time: ", time()-_)
+
+
     color_layer.data.foreach_set("color", np.array(list_color).flatten())
 
 
@@ -607,7 +687,7 @@ def make_vertex_colors(r, v, ob, vertex_colors_name_base="test_v_colors", verbos
     list_color = np.array(list_color)
     list_color = cmap(norm( list_color ))
     if verbose: print("time list_color", time()-_)
-    print("pie", list_color)
+    
     if verbose: _ = time()
     color_layer.data.foreach_set("color", list_color.flatten())
     if verbose: print("time foreach_set", time()-_)
@@ -664,16 +744,22 @@ def make_vertex_colors_surface(ob, eff_temp_color, vertex_colors_name_base="test
     #         for poly in mesh.polygons\
     #         for vert_i_poly, vert_i_mesh in enumerate(poly.vertices)])
     
-    # We loop over all the polygons
-    for poly in mesh.polygons:
-        # We get the polygon index and the corresponding mesh index
-        for vert_i_poly, vert_i_mesh in enumerate(poly.vertices):  
-            # We get the loop index from the polygon index   
-            vert_i_loop = poly.loop_indices[vert_i_poly]
-            # We set the color for the vertex
-            color_layer.data[vert_i_loop].color = eff_temp_color#[1., 1., 0., 1.0]#vert_colors[vert_i_loop]
-            # A print statement to see how the indices relate to each other 
-            # print(list(color_layer.data[vert_i_loop].color), vert_i_poly, vert_i_mesh, vert_i_loop)
+
+    list_color = np.array([eff_temp_color \
+                for poly in mesh.polygons\
+                for vert_i_poly, vert_i_mesh in enumerate(poly.vertices)])
+    color_layer.data.foreach_set("color", list_color.flatten())
+
+    # # We loop over all the polygons
+    # for poly in mesh.polygons:
+    #     # We get the polygon index and the corresponding mesh index
+    #     for vert_i_poly, vert_i_mesh in enumerate(poly.vertices):  
+    #         # We get the loop index from the polygon index   
+    #         vert_i_loop = poly.loop_indices[vert_i_poly]
+    #         # We set the color for the vertex
+    #         color_layer.data[vert_i_loop].color = eff_temp_color#[1., 1., 0., 1.0]#vert_colors[vert_i_loop]
+    #         # A print statement to see how the indices relate to each other 
+    #         # print(list(color_layer.data[vert_i_loop].color), vert_i_poly, vert_i_mesh, vert_i_loop)
 
     # list_color = np.array(list_color)
     # list_color = cmap(norm( list_color ))
