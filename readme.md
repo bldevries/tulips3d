@@ -25,10 +25,21 @@ A still render of energy production in a star at three different moment of evolu
 <img src="images/three_examples_tulips3d_4_logo.png" alt="" width="720" height="auto">
 </div>
 
+An animation of showing the star's interior properties.
+<div align="center">
+<img src="images/low_full_v1.gif" alt="" width="720" height="auto">
+</div>
+
+Animation of how the different interior properties of the star change over time.
+<div align="center">
+<img src="images/low_chem_v1.gif" alt="" width="720" height="auto">
+</div>
+
+<!-- 
 A rendered animation of three internal properties of the star as function of time. You see energy production, log(T) and log(rho).
 <div align="center">
 <img src="images/simple_test_animation.gif" alt="" width="720" height="auto">
 </div>
-
+ -->
 ## Installation
 For the moment, use [these](tutorials/a_first_installation_and_test.md) instructions to install and test Tulips3D.
