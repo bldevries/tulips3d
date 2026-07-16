@@ -1,11 +1,14 @@
 
 import bpy
 import math
+import os
 
 # ######################################################
 #
 # ######################################################
 def load_texture(texture_path):
+    '''Loads a texture into an image'''
+    
     if texture_path:
         if texture_path in bpy.data.images:
             img = bpy.data.images[texture_path]
@@ -30,6 +33,9 @@ def add_geo_nodes(obj, radius_texture_path, teff_texture_path, nr_of_files=498, 
                     star_radius_attr_name = "StarRadiusAttribute",\
                     Teff_attr_name = "TeffAttribute"\
                     ):
+    ''' Creates geometry nodes to scale the star and to save the Teff and the star radius
+    as attributes to use in the shader nodes'''
+
     img_R = load_texture(radius_texture_path)
     img_Teff = load_texture(teff_texture_path)
 
@@ -186,6 +192,9 @@ def add_geo_nodes(obj, radius_texture_path, teff_texture_path, nr_of_files=498, 
 #
 # ######################################################
 def create_material_data_t_r(name, data_texture_path, nr_of_files=498):
+    '''Creates a material with shader nodes to color the pie sides. Works
+    for the regular data_t_r profile labels (like en, logT, etc)'''
+
     img = load_texture(data_texture_path)
     img.source = 'SEQUENCE'
     # img.auto_refresh = True
@@ -295,30 +304,24 @@ def create_material_data_t_r(name, data_texture_path, nr_of_files=498):
     link_XYZ_text = links.new(node_XYZ.outputs[0], node_ShaderNodeTexImage.inputs[0])
     link_text_emm = links.new(node_ShaderNodeTexImage.outputs[0], node_emission.inputs[0])
     link_emm_out = links.new(node_emission.outputs[0], node_output.inputs[0])
-    # link = links.new(node_vertex_color.outputs[0], node_emission.inputs[0])
-    # link2 = links.new(node_emission.outputs[0], node_shader_mixer.inputs[2])
-    # link3 = links.new(node_BSDF_transparency.outputs[0], node_shader_mixer.inputs[1])
-    # link5 = links.new(node_shader_mixer.outputs[0], node_output.inputs[0])
     return mat
 
 # ######################################################
 #
 # ######################################################
-def create_material_chem_profile(name, data_texture_path, nr_of_files=498):
-    img = load_texture(data_texture_path)
-    img.source = 'SEQUENCE'
-    # img.auto_refresh = True
-
-    mat = bpy.data.materials.new(name)
-    mat.blend_method = 'BLEND' # Alpha Blend, Render polygon transparent, depending on alpha channel of the texture.
-    mat.use_nodes = True
-    mat.show_transparent_back = False
+def update_material(mat, data_texture_path):
+    '''Updates a material with another texture file. Works for both data_t_r profile
+    data as well as the chemical profiles'''
     nodes = mat.node_tree.nodes
+    print(nodes)
+    if 'Image Texture' in nodes:
+        if os.path.isfile(data_texture_path):
 
-    # clear all nodes to start clean
-    nodes.clear()
-
-    bpy.ops.node.add_group_asset(asset_library_type='ESSENTIALS', asset_library_identifier="", relative_asset_identifier="nodes/shading_nodes_essentials.blend/NodeTree/Separate Spherical")
+            img = load_texture(data_texture_path)
+            img.source = 'SEQUENCE'
+            nodes['Image Texture'].image = img
+            return True
+    return False
 
 # ######################################################
 #
@@ -354,10 +357,3 @@ def create_material_Teff(name, color_attr_name="TeffAttribute"):
 
     return mat
 
-
-# obj = bpy.context.active_object
-# filen = "/Users/vries001/Dropbox/0_DATA_BEN/PHYSICS/PROJECTS/tulips3D/dev/binary/binary_data_JUN2026/DataTulips3D_7JUL26/star1/textures/data_5.0_Rmax.exr"
-# store_star_size_geo_nodes(obj, filen)
-# material_name = "test_matttt"
-# filen = "/Users/vries001/Dropbox/0_DATA_BEN/PHYSICS/PROJECTS/tulips3D/dev/binary/binary_data_JUN2026/DataTulips3D_7JUL26/star1/textures/en/data.0.exr"
-# obj.data.materials.append(create_material_data_t_r(material_name, data_texture_path=filen))
